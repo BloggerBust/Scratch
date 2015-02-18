@@ -1,0 +1,108 @@
+* Node
+- process.env.NODE_ENV :: environment variable for configuring what environment node should run in i.e. dev, prod etc.
+** Node Modules
+*** Bower
+  - Install: $npm install -g bower
+  - Help:
+    - $ bower help
+    - help on specific command : $ bower help command_name
+  - Bower Lookup:
+   Lets you see the git uri for a specific package
+    - $bower lookup lodash
+  - Bower Install: 
+    - current version: $ bower install lodash
+    - specific version: $ bower install lodash#2.2.1
+    - save package to bower.json dependencies: $ bower install lodash --save
+    - install package to dev only: $ bower install lodash --save-dev
+    - install from cache (offline mode): $ bower install lodash -o
+    - install from local repository: $ bower install relative-path/ProjectDirectoryName
+    - install regular dependencies: $ bower install --production
+    - install to named folder: $ bower install named_dir=lodash
+  - Bower Uninstall: 
+    - $ bower uninstall lodash
+    - $ Remove from dependencies: bower uninstall lodash --save 
+    - $ Remove from dev dependencies: bower uninstall lodash --save-dev
+  - Bower Package Info: $ bower info lodash
+  - Bower Update:
+    - Update all packages: $bower update
+    - Update single package: Just use Bower Install. It will update already installed packages.
+  - Bower List:
+    - list already installed packages: $bower list
+  - Prune:
+    Removes all packages that are not indicated in the bower.json file or are not sub-dependencies of existing dependencies.
+    - $ bower prune
+  - Bower Registery Search:
+    - find all packages with the specified word: $bower search lodash
+    - find package by keyword: go to the bower site http://bower.io/search/
+  - Bower Init:
+    - Used to create the bower json file: $ bower init
+  - Bower RC:
+    - Create a file called .bowerrc that contains a json with a single property named "directory"
+      {
+        "directory": "js/lib"
+      }
+      This specifies where bower should install packages.
+    - Have bower install to more than one directory by creating more than one init point. So you could have a sub directory called test and throw a bower.json and .bowerrc file in there for managing dependencies in directory test/js/lib.
+  - Bower Cache
+    - List what is in the cache: $bower cache list
+    - Clean the cache: $bower cache clean
+  - Bower register
+    To register a repository
+    - $ git register https://github.com/TrevorWilsonSS/[reponame]
+    - It will then ask if it can register the package with bower.herokuapp.com.
+*** nodemon
+    - Run a node application reloads modified files on the fly.
+* Angular JS
+** Isolate Scope
+- Local Scope Properties: Used to allow information flow between isolate and parent scope. Note that the alternate name option applies to all local scope properties, but is only illustrated with the @ below.
+  - @: one-way binding of string values
+    - directive usage:
+      scope: {
+    name: '@'
+    value: '@someOtherAttrName'
+    }
+    - consumer usage:
+    <div my-isolate-scope-with-name name: '{{customer.name}}' someOtherAttrName='{{constomer.value}}'></div>
+  - =: two-way binding of objects
+    - directive usage:
+   scope: {
+   customer: '='    
+   },
+    template: '<ul><li ng-repeat="prop in customer">{{prop}}</li></ul>
+    - consumer usage:
+      <div my-isolate-scope-with-model customer="customer"></div>
+  - &: function binding for call-backs
+    - directive usage:
+      scope{
+      action:'&'
+      }
+    - consumer usage:
+      <div my-isolate-scope-with-function action="doStuff()" />
+* ExpressJS
+* Jade
+  - The view engine used by express applications
+  - doctype :: specifies that the jade file will contain HTML5
+  - // :: a single line comment
+* jquery
+* toastr
+* git
+** Steps to create a new Github Rep
+ 1. Login to github and create the repository
+ 2. Copy the ssh path to the new repository
+ 3. Follow this command pattern:
+    - $ mkdir myProj
+    - $ cd myProj
+    - $ git init
+    - touch README.md
+    - touch .gitignore
+    - git add -A
+    - git commit -m "my first checkin"
+    - git remote add origin [paste copied git repo uri here]
+    - git push -u origin master :: //MUST BE IN INTERACTIVE SHELL TO PROVIDE CREDENTIALS
+    
+** Steps to tag and push a new release
+ 1. cd myProj
+ 2. command pattern:
+    - git tag 0.0.1 :: Should be the same version as entered in bower.json "version" property
+    - git push --tags
+ 3. Now visit github, click on the project and then click on the release link to view the release.
