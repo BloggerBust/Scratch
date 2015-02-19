@@ -1,5 +1,8 @@
 * Node
 - process.env.NODE_ENV :: environment variable for configuring what environment node should run in i.e. dev, prod etc.
+** npm
+   - node package-manager
+   - npm help <command> :: brings up help documentation on the specified command
 ** Node Modules
 *** Bower
   - Install: $npm install -g bower
@@ -52,6 +55,21 @@
     - It will then ask if it can register the package with bower.herokuapp.com.
 *** nodemon
     - Run a node application reloads modified files on the fly.
+    - usage :: $ nodemon main-file.js
+*** Stylus
+    - A CSS preprocessor
+    - styl :: file extension
+*** Jade
+  - The view engine used by express applications
+  - jade :: file extension
+  - doctype :: specifies that the jade file will contain HTML5
+  - // :: a single line comment
+
+*** ExpressJS
+*** Morgan
+    - Http request logger middleware
+*** Body-parser
+    - Body parser middleware
 * Angular JS
 ** Isolate Scope
 - Local Scope Properties: Used to allow information flow between isolate and parent scope. Note that the alternate name option applies to all local scope properties, but is only illustrated with the @ below.
@@ -78,11 +96,6 @@
       }
     - consumer usage:
       <div my-isolate-scope-with-function action="doStuff()" />
-* ExpressJS
-* Jade
-  - The view engine used by express applications
-  - doctype :: specifies that the jade file will contain HTML5
-  - // :: a single line comment
 * jquery
 * toastr
 * git
