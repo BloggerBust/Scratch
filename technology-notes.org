@@ -64,12 +64,17 @@
   - jade :: file extension
   - doctype :: specifies that the jade file will contain HTML5
   - // :: a single line comment
-
+*** toastr
 *** ExpressJS
 *** Morgan
     - Http request logger middleware
 *** Body-parser
     - Body parser middleware
+*** Mongoose
+  - Fascilitates implementation of mongo-db in node applications
+  - makes implementation of mongo much easier.
+  - works off of schemas. Since mongo-db is a schema list document database, implementing schemas with mongoose is often seen as a bad idea.
+    
 * Angular JS
 ** Isolate Scope
 - Local Scope Properties: Used to allow information flow between isolate and parent scope. Note that the alternate name option applies to all local scope properties, but is only illustrated with the @ below.
@@ -96,8 +101,37 @@
       }
     - consumer usage:
       <div my-isolate-scope-with-function action="doStuff()" />
+* Mongo-db
+  - A schema list document database
+  - No schema to define.
+  - No relationship between collections of objects.
+  - Objects can be flat or structured.
+  - Two documents in same collection can be different from each other since no schema governs the collection.
+    + Scalability
+      - Single document write scope. Documents live in a collection, but updating a document occurs one at a time.
+      - No need to extend locks accross collections because there are no relationships to enforce.
+      - Eventual consistency. Mongo does not lock accross multiple mongo servers. A repleca set in mongo contains a single server that will handle all writes and a collection of secondary servers that will be replecated to. There is a lag of time from when a write occurs in the Primary DB to when the value is made observable by others by being replicated in a secondary db; hence, eventual consistancy.
+      - Can choose consistancy model: 
+        - Can choose to wait for primary write server to persist data
+        - To wait for all replica servers to sync with the primary server following the write.
+        - To wait for a majority of replica servers to sync with the primary server following the write.
+        - Choose to hand over document to primary and not care wether it persisted or not.
+      - Capped Collections:
+        - Fixed size :: no time to allocate space
+        - Auto override all documents
+    + Mongod
+      - The daemon.
+      - Default Port: 27017
+      - mongod help :: help documentation for commandline options
+    + Mongos
+      - The sharding server.
+  - Mongo Client
+    - mongo :: starts the client
+    - exit :: quits the client
+    - show dbs :: lists existing dbs
+    - db :: shows the current database
+    - use foo :: switches to database few and creates it if it does not exist.
 * jquery
-* toastr
 * git
 ** Steps to create a new Github Rep
  1. Login to github and create the repository
