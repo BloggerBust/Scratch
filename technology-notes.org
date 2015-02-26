@@ -127,10 +127,35 @@
       - The sharding server.
   - Mongo Client
     - mongo :: starts the client
+    - help :: brings up client help documentation
     - exit :: quits the client
     - show dbs :: lists existing dbs
     - db :: shows the current database
     - use foo :: switches to database few and creates it if it does not exist.
+    - db.getMongo() :: returns host and port for that server instance.
+  - Replica Sets
+    - Advantages :: scalability and automatic recovery.
+    - Types :: Primary, Secondary, Arbiter
+    - Primary
+      - One and only primary instance. 
+    - Secondary
+      - Readonly
+      - one to many
+      - Data is replicated from primary. Gaurantees eventual consistancy.
+      - If Primary database fails, one of the seconary databases will take over and become the primary. This is descided by an election.
+      - Nothing special happens if a secondary db fails. If one secondary fails and there are others than no big deal. Haveing multiple Secondaries protects against single server failure.
+    - Arbiter
+      - sole purpose is to break ties on primary db elections.
+      - is not a database. It contains no data.
+    - Minimal replica set :: Primary DB, 1 Secondary DB, 0 or 1 Arbiters
+    - Dev can run a replica set on a single machine. Production should run each mongo server per machine
+    - Creation of single machine replica set:
+      - Each mongo server requires its own db directory. i.e. db{1,2,3}
+      - Each mongo server must run on a different port
+      - mongod --dbpath ./db{n} --port unique_port_num --replSet "<replicaSetName>"
+** TODO Install Mongo-db Minimal ReplicaSet
+   - mongod -f "e:\dev\experiments\MultiVision\conf\mongod1.conf" --replSet "Experiments" --install
+   - Windows instructions to get the replica set running as a service.
 * jquery
 * git
 ** Steps to create a new Github Rep
@@ -153,3 +178,8 @@
     - git tag 0.0.1 :: Should be the same version as entered in bower.json "version" property
     - git push --tags
  3. Now visit github, click on the project and then click on the release link to view the release.
+
+
+
+
+
