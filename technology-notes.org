@@ -183,3 +183,6 @@
 
 
 
+* TODO [/] Work emacs init.el
+  [ ] Install helm package
+  [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
