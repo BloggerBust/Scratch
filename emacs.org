@@ -231,7 +231,8 @@
 - M-x package-install browse-kill-ring :: M-x browse-kill-ring opens a buffer that contains everything in the kill ring. Also includes numerouse other browse-kill-ring functions.
 - M-x package-install ido-flex :: fuzzy ido-mode pattern matching. https://github.com/lewang/flx
 - M-x package-install ace-jump-mode :: Acejump mode is a minor mode for quick jump to a position in the current buffer. There are three submodes: ace-jump-char-mode, ace-jump-word-mode and ace-jump-line-mode.
-- M-x aut-config :: Adds auto-config to emacs.
+- M-x auto-config :: Adds auto-config to emacs.
+- less-css-mode :: majore-mode for less css files.
 ** CASK
    - Is a package and dependency manager for emacs.
    - Used instead of package-install manager.
@@ -254,3 +255,8 @@
        - $ cask :: this will download and install all of the dependencies.
      - Packages are stored in ~/.emacs.d/.cask/{version}/
      - cask update :: updates all of the packages.
+* Pain Points
+  - Windows
+    - projectile-grep failing
+    - projectile-ag fails because ag is not available
+    - omnisharp-find-usages seems to only find usages in the current file, rather than anywhere in the solution.

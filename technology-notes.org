@@ -183,6 +183,26 @@
 
 
 
+* OmniSharp 
+** Install Windows OmniSharp server
+   - install the omnisharp-emacs package from melpa
+   - download curl for windows :: http://curl.haxx.se/download.html
+   - cd /path-to-curl/winbuild
+     - review the BUILD.WINDOWS.txt build options
+     - $ nmake /f Makefile.vc mode=dll
+   - cd [path-to-OmniSharp\]
+     - mkdir tmp :: this is for the omnisharp curl tmp file path
+   - now add the curl.exe path in the builds directory to the windows PATH environment variable.
+   - Follow the instructions on the OmniSharpServer github site to clone and build the git repository :: https://github.com/OmniSharp/omnisharp-server
+   - add the following to init.el
+   (setq omnisharp--curl-executable-path "e:/dev/curl-7.41.0/builds/libcurl-vc-x86-release-dll-ipv6-sspi-winssl/bin/curl.exe")
+   (setq omnisharp-server-executable-path "e:/dev/experiments/OmniSharpServer/OmniSharp/bin/Debug/OmniSharp.exe")
+   (setq omnisharp--windows-curl-tmp-file-path "e:/dev/experiments/OmniSharpServer/tmp/omnisharpCurlTmp.cs")   
+   - Now test that OmniSharp will start with M-x Omnisharp-start-omnisharp-server. Then provide the full path to a solution file.
+     - M-x projectile-compile-buffer :: then provide the build command
+** Omnisharp-emacs
+   - https://github.com/OmniSharp/omnisharp-emacs :: project URI with great documentation
+   - omnisharp-build-in-emacs :: builds the solution in emacs. Requires omni-sharp-mode
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
