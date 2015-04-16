@@ -274,7 +274,29 @@
          - PaX protections are immediately activated.
          - The "forbid by default" mode.
          - The user must explicitly mark binaries to relax PaX protection selectively.
-       - 
+     - PaX Configurable Features
+       - Enforce non-executable pages :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Enforce_non-executable_pages
+       - Enhanced Address Space Layout Randomization (ASLR) :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Enhanced_Address_Space_Layout_Randomization_.28ASLR.29
+       - Miscellaneous Memory Protection :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Miscellaneous_Memory_Protection
+     - PaX patches support three ways of doing PaX markings:
+       1. EI_PAX
+          - This option is nolonger supported
+          - Places PaX flags in bytes 14 and 15 of the e_ident field of an ELF objects header.
+       2. PT_PAX
+          - Places the flags in an ELF object's program header called PAX_FLAGS.
+          - Flags are in the body of the object and so if the object is moved or copied the flags are also.
+          - The object must have the PAX_FLAGS program header to work. Most Linux distrobutions do not build their executables and libraries with this program header.
+       3. XATTR_PAX
+          - This is the preferred approach.
+          - PaX flags are palced in the file system's extended attributes.
+          - Does not modify the ELF object.
+          - The file system and utilities used to copy, move and archive files must support xattrs.
+            - Must support user.pax.* namespace in which the PaX flags are placed.
+            - Do not enable the entire user.* namespace because it may open attack vectors.
+            - Must support security.*, trusted.* namespaces.
+     - Building a PaX Kernel
+       - Reference :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Building_a_PaX_Kernel
+
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
