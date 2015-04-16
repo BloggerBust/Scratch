@@ -1,0 +1,278 @@
+* Emacs Resources
+  - GNU emacs homepage :: https://www.gnu.org/software/emacs/
+  - prelude - enhanced emacs distribution :: https://github.com/bbatsov/prelude
+  - More video training. :: http://emacsrocks.com/ 
+  - more screencasts :: http://emacsmovies.org/
+  - more screencasts :: http://www.emacsbites.com/
+  - Rem Zolotykh's blog :: http://remchi.me/
+  - Excellent blog :: http://www.masteringemacs.org/
+* Venture Into Emacs
+-https://code.tutsplus.com/courses/venture-into-emacs/lessons/initial-customizations
+- Currently on 2.5 better point movement
+- By Rem Zolotykh 
+* Terminology
+- Frame :: The boundary of the GUI for the emacs application that encases windows.
+- Window :: any area that displays a buffer. An emacs frame may be split to contain many windows.
+- M-<chrs> :: Hold the Meta-key plus additional characters. In our case it is the Alt key.
+- C-<chrs> :: Hold the Ctrl key plus additional characters.
+
+* Getting Help In Emacs
+- C-h k :: Brings up the help document for whatever command is entered
+- C-h f :: Describe function. If the point is on text that matches the name of a function, then that will become the default function to describe. Otherwise, a function name to describe may be entered.
+- C-h C-f :: Emacs FAQ
+
+* Key-bindings
+- C-g :: Cancel whatever command was pending
+- M-x :: Displays a meta prompt in the Mini-buffer for running emacs commands
+- C-u - :: Prefix command. Pass a number followed by a command and it will repeat that command the specified number of times.
+- C-_ :: undo!
+
+** File
+   - C-x C-f :: Find file.
+   - C-x C-s :: Save file.
+   - M-x mkdir :: makes a directory and any parent directories
+   - C-x d :: acivates dired mode
+** Buffer
+   - M-x shell :: starts a new buffer called *shell* running the default shell.
+   - C-space :: marks beginning of region. Subsequently, marks end of region.
+   - C-space C-space :: sets a bookmark
+   - C-u C-space :: returns to previous bookmark
+   - C-x C-f Ret /sudo::/path :: open file with sudo. Requires Tramp.
+   - Add (require 'tramp) to init.el
+   - C-x k :: kill buffer
+
+** Movement
+   - C-p :: Previous line
+   - C-n :: Next line
+   - C-f :: move point forward
+   - C-b :: move point backward	    
+   - M-f :: move point forward one word
+   - M-b :: move point backwards one word
+   - C-v :: move point down one page
+   - C-b :: move point backwards one page
+   - C-e :: move point to end of line
+   - C-a :: move point to beginning of line
+   - M-> :: move point to end of buffer
+   - M-< :: move point to beginning of buffer
+   - C-l :: set point to centre. Subsequently, return to previous position
+   - M-o :: jump to next window
+   - C-b <name-of-buffer> :: switch to named buffer
+        
+** Text Manipulation
+   - C-s :: launch I-search in the mini-buffer
+   - C-d :: forward-delete one character
+   - M-d :: forward-delete one word
+   - backspace :: backward-delete one character
+   - M-backspace :: backward-delete one word
+   - M-w :: copies region
+   - C-w :: cuts region
+   - C-j :: newline and indent
+   - M-^ :: concatonate lines into one line. Removes the newline characters.
+   - M-@ :: select from point to end of word. subsequently select next word.
+   - M-% :: search and replace
+   - C-SPC :: jump to beginning of word by char. Requires ace-jump-mode.
+   - C-u C-c SPC :: prefix command to jump to char anywhere in word. Requires ace-jump-mode.
+   - C-u C-u C-c SPC :: double prefix command to jump to line anywhere. Requires ace-jump-mode.
+
+** Registers
+   - C-x -r SPC <Char> :: Create a new register Identified by Char. Char can be any alpha-numeric character.
+   - C-x -r j <Char> :: Jump to register Identified by Char.
+   - C-x -r s <Char> :: Save region to register Identified by Char.
+   - C-x -r i <Char> :: Insert register text Identified by Char to point.
+   - M-x append-to-register <Char> :: Appends region to register identified by Char.
+   - C-x -r m <Name> :: register a bookmark identified by Name. Name may contain spaces.
+   - C-x -r b <Name> :: jump to bookmark identified by <Name>. Supports tab completion.
+   - C-x -r l :: Manage Bookamrks. Shows whole list of bookmarks. Persists across emacs sessions.
+                 - ? :: brings up help on all commands available for managing bookmarks.
+
+** Window
+   - C-x 0 :: Delete window leaving the buffer.
+   - C-x 1 :: merge all frames
+   - C-x 3 :: split frame vertically
+   - C-x 2 :: split frame horizontally
+
+** kill-ring
+   - C-k :: yank from the point to the end of current line into the kill ring
+   - C-w :: cuts selected text into kill-ring
+   - C-y :: push whatever is current on the kill ring into the current point
+   - M-y :: traverse killring inplace.
+            
+* elisp
+   - URI to reference manual : https://www.gnu.org/software/emacs/manual/html_node/elisp/
+   - ?\ :: indicates that what follows should be interpreted as a character. i.e. ?\C-f is the input character made when holding the Ctrl-f keys.
+   - (keyboard-translate <target-key> <key-to-change>)
+   - M-x eval-region :: evaluates lispe code marked by the current region
+   - (kbd <string-key-code>) :: Convert KEYS to the internal Emacs key representation. KEYS should be a string constant in the format used for saving keyboard macros (see `edmacro-mode').
+   - (global-set-key <key-code> lisp-func) :: maps key to lisp function
+   - (tool-bar-mode arg) :: if arg is positive then the toolbar is added else it is removed
+   - (scroll-bar-mode arg) :: if arg is positive then the scroll-bar is added, else it is removed
+   - (set-frame-font <font-size>) :: Sets the current font. The argument is the name of the font followed by a hyphen followed by the font size.
+   - if :: Contains two statements. First is evaluated if true, otherwise the second is evaluated.
+   - when :: like if statement, but contains a single code block that is evaluated when condition is met
+   - (require 'FEATURE) :: if feature is not loaded, then load it from filename.
+   - (package-initialize) :: load emacs lisp package and activate it
+   - Cons Cell :: A data object representing an ordered pair.
+   - (global-visual-line-mode t) :: sets visual-line-mode
+   - (delete-selection-mode t) :: replaces selected text with typed text.
+   - (show-paren-mode t) :: highlight matching parenthesis
+   - (interactive) :: Makes the function public to emacs key-maps and mini-buffer.
+   - (end-of-line) :: Moves point to end of line
+     
+* modes
+  - major mode :: provide special features for specific file type. One major mode per buffer.
+    - (message auto-mode-list) :: Displays major mode mapping list.
+    - (add-to-list 'auto-mode-list '('regex' . <major-mode>)) :: adds a mapping to a major mode for the given regular expression.
+  - minor mode :: provides additional behavior to buffer.
+    - (add-hook '<mojor-mode>-hook 'minor-mode) :: activate a minor mode when a major mode is active.
+    - (define-minor-mode) :: Define a new minor mode.
+    - (minor-mode-name t) :: activates a minor mode identified by minor-mode-name
+    - (defvar name-of-minor-mode-map (make-keymap) "my keys")) :: define minor-mode keymap
+    - (define-key) :: adds to minor-mode keymap
+  - mode-line :: Displayed at bottom of buffer in parenthesis. First item is the majore mode. Other items are minore modes.
+  - M-x mode-name :: Toggles mode on or off.
+** Dired mode.
+   - C-x d :: activates dired mode
+   - q :: quit
+   - Basic workflow in dired is to mark files for some operation and then press command key.
+   - j <name of file>:: jumps to file.
+   - n :: next file
+   - p :: previous file
+   - d :: mark file for deletion
+   - u :: unmark a file
+   - C-/ :: undo
+   - % <key> :: flag with regular expression. i.e %d would allow flagging files for deletion with a regular expression.     
+   - x :: executes commands for marked files
+   - f :: visit file or directory. If you visit a new directory it will still open a new buffer in dired mode to display the listing of that directory.
+   - ^ :: visit parent directory.
+   - o :: opens file in split frame.
+   - R :: rename file or directory. This also moves a file if you rename the path.
+   - + :: create directory
+   - m :: mark a file
+   - C :: copy marked files
+   - C-x C-q :: Writeable dired mode
+     - make changes in buffer as desired
+     - C-c C-c :: writes changes
+** Org-mode
+   - site :: http://orgmode.org
+   - C-c C-t :: Todo Item.
+     - Toggle 1 :: Sets to Done.
+     - Toggle 2 :: Turns off Todo.
+   - C-c C-u :: Navigate headings up
+   - C-c C-n :: Navigate headings next
+   - C-c C-p :: Navigate headings previous
+   - C-c C-j :: Navigate Headings jump. Folds everything, then provides options to search or browse.
+   - M-S-up :: org-shiftmetaup. Moves things up depending on context.
+   - M-S-down :: org-shiftmetadown. Moves things down depending on context.
+   - C-c C-x :: prefix for operating at the org node level. What follows is standard emacs commands such as C-w for cut or M-w for copy etc.
+   - C-c C-e :: launches export options
+*** Markup
+  - * :: header. Additive for increasing depth.
+  - *<text>* :: emphasis.
+  - -, +, 1, 1), 1. :: bullets
+  - unordered lists use - or +
+  - ordered lists start with a number
+
+*** Code
+  - <s <tab> :: creates a code snippet. Following the BEGIN_SRC you must specify the language of the snippet.
+      #+BEGIN_SRC c
+        /* Hello World program */
+
+        #include<stdio.h>
+
+        main() {
+          printf("Hello World"); // this is cool
+        }
+      #+END_SRC
+  - C-' :: If cursor is inside snippent then this will open a new buffer in the snippets languages mode for editing.
+    - toggle will commit the edit to the code snippet.
+  - =some code= :: surrounding text with equal signs gives inline code snippet.
+
+*** Lists
+    + M-<RET> (org-insert-heading)
+      + Inserts a new item at current level.
+    + M-S-<RET>
+      + Insert a new item with a checkbox
+    + M-left/right
+      + Increase/decrease the indentation of an item.
+    + M-S-<left>/<right>
+      + Increase/decrease the indentation of an item and its children.
+    + C-c -
+      + Cycle through bullets ('-','+','*','1.','1)')
+
+*** TODOs
+    - C-c C-t :: Creates a TODO. This must be on a heading. Alternatively to add a todo you simply type TODO after heading markup.
+    - C-c C-c :: Add a tag. Tags are actually created for header nodes, but TODOs are a type of header node so you can tag them.
+      - Tags are filterable
+    - C-c C-t :: to mark a TODO item as done, subsequently removes the todo all together
+      - S-right, S-left :: also cycles TODO states.
+    - [1/2] :: a checkbox. Make it count how many children are completed by adding a forward slash inside and remove any whitespace followed by C-c C-c
+      - [X] :: a sub-item. Mark it as completed with C-c C-c
+      - [ ] :: another sub-item
+* electric-indent-mode
+  - (electric-indent-mode t) :: activates auto-indenting.
+** projectile-mode
+   - It is a minor mode to assist project management and navigation. See help documentation for key bindings.
+   - git files are automatically considered projectfiles.
+   - Make any directory the root of a project by adding a file named .projectfile.
+** helm-projectile-mode
+   - helps to search for files within a project.
+   - If invoked outside of a project it can display a list of known projects to jump to. In contracst, if projectile is used to try to switch to a project without first being in a project it will fail and complain that it is not in a project.
+   - C-p d :: opens the root of the project in dired mode.
+** helm-mode
+   - https://github.com/emacs-helm/helm/wiki :: wiki
+   - provides auto-completion for M-x     
+* custom-configuration
+- ~/.emacs.d/init.el :: emacs initialization file
+- M-x package-list-packages :: Fetches the latest package meta-data.
+- M-x package-install <name-of-package> :: installs the named package
+- M-x <name-of-theme> :: activates theme
+- M-x visual-line-mode :: wrap by word
+
+* packages
+  - saveplace :: saves the point on exiting buffer
+    - configuration
+      - (require 'saveplace)
+      - (setq save-place-file (concat user-emacs-directory "saveplace.el"))
+      - (setq-default save-place t) :: activated by default
+  - auto-complete :: Auto-complete minor-mode. This package is not installing.
+    - configuraiton
+      - (require 'auto-complete-config)
+      - (ac-config-default)
+** packages to install
+- M-x package-install browse-kill-ring :: M-x browse-kill-ring opens a buffer that contains everything in the kill ring. Also includes numerouse other browse-kill-ring functions.
+- M-x package-install ido-flex :: fuzzy ido-mode pattern matching. https://github.com/lewang/flx
+- M-x package-install ace-jump-mode :: Acejump mode is a minor mode for quick jump to a position in the current buffer. There are three submodes: ace-jump-char-mode, ace-jump-word-mode and ace-jump-line-mode.
+- M-x aut-config :: Adds auto-config to emacs.
+** CASK
+   - Is a package and dependency manager for emacs.
+   - Used instead of package-install manager.
+   - Install:
+     - $ cd ~/
+     - $ curl -fsSL https://raw.githubusercontent.com/cask/cask/master/go | python
+     - $ cd ~/emacs.d/
+       - $ cask init :: produces the .cask/cask.el file
+     - open emacs ~/emacs.d/init.el
+       - remove all of the lines related to requiring and initializing pacakges.
+       - Add the following to ensure all of the dependencies from cask are installed
+         - (require 'cask "~/.cask/cask.el")
+         - (cask-initialize)
+     - Open the ~/emacs.d/Cask file and add the following lines:
+       - (source gnu)
+       - (source melpa)
+       - (depends-on "cask")
+       - Any other dependencies
+     - From ~/emacs.d/
+       - $ cask :: this will download and install all of the dependencies.
+     - Packages are stored in ~/.emacs.d/.cask/{version}/
+     - cask update :: updates all of the packages.
+* Shells and Terms
+** Ansi-term
+   - C-c C-j :: switch to line mode
+   - C-c C-k ::: switch to char mode
+* Server
+  - M-x server-start :: turns any emacs session into a server
+  - emacs --dameon :: starts emacs as a background daemon. This 
+  - emacsclient -t :: connect to the emacs server with a terminal
+  - emacsclient -c :: same as -t, but opens a new graphical frame outside of the terminal.
+  - Can be used like screen to keep long running terminal sessions alive after disconnecting from the server by running emacs as a daemon and then connecting via emacsclient.
+  - C-x 5 0 :: Delete Frame. This will detatch emacsclient from the server by closing the emacsclient frame. This in turn closes the emacs client, but the server continues to run and may be attached to in the future.
