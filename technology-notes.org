@@ -179,10 +179,6 @@
     - git push --tags
  3. Now visit github, click on the project and then click on the release link to view the release.
 
-
-
-
-
 * Linux 
 ** Commands :: remember to always check the man pages.
   - lsblk :: list block devices.
@@ -279,3 +275,6 @@
          - The "forbid by default" mode.
          - The user must explicitly mark binaries to relax PaX protection selectively.
        - 
+* TODO [/] Work emacs init.el
+  [ ] Install helm package
+  [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs

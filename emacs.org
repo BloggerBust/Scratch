@@ -15,7 +15,7 @@
 - Window :: any area that displays a buffer. An emacs frame may be split to contain many windows.
 - M-<chrs> :: Hold the Meta-key plus additional characters. In our case it is the Alt key.
 - C-<chrs> :: Hold the Ctrl key plus additional characters.
-
+            
 * Getting Help In Emacs
 - C-h k :: Brings up the help document for whatever command is entered
 - C-h f :: Describe function. If the point is on text that matches the name of a function, then that will become the default function to describe. Otherwise, a function name to describe may be entered.
