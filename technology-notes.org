@@ -179,30 +179,103 @@
     - git push --tags
  3. Now visit github, click on the project and then click on the release link to view the release.
 
+* Linux 
+** Commands :: remember to always check the man pages.
+  - lsblk :: list block devices.
+  - lddtree --help :: there are no man pages for this command
+  - lddtree --copy-to-tree=/source/path /target/path :: from app-misc/pax-utils USE="python"
+  - find /usr/portage -name '*.ebuild' -o -name '*.eclass' | xargs grep MAKE_CONF_VARIABLE :: finds all package references to MAKE_CONF_VARIABLE
+  - lspci | grep -i vga :: detect video controller
+*** Detect Motherboard, Bios and CPU
+   - dmidecode -t 4 | grep ID :: The CPU ID
+   - dmidecode -t 0 :: Bios info
+   - dmidecode -t 4 :: Processor info
+   - dmidecode -t 11 :: Original Equipment Manufacturer (OEM) info
+** I/O Stream Numbers
+   | Handle | Name   | Description     |
+   |      0 | stdin  | Standard input  |
+   |      1 | stdout | Standard output |
+   |      2 | stderr | Standard error  |
+   - =$ program-name 2> error.log= :: Redirect standard error stream to a file
+   - =$ program-name &>file= :: Redirect the standard error (stderr) and stdout to file
+     =$ program-name > file-name 2>&1= :: Alternate redirect the standard error (stderr) and stdout to file
 
-
-
-
-* OmniSharp 
-** Install Windows OmniSharp server
-   - install the omnisharp-emacs package from melpa
-   - download curl for windows :: http://curl.haxx.se/download.html
-   - cd /path-to-curl/winbuild
-     - review the BUILD.WINDOWS.txt build options
-     - $ nmake /f Makefile.vc mode=dll
-   - cd [path-to-OmniSharp\]
-     - mkdir tmp :: this is for the omnisharp curl tmp file path
-   - now add the curl.exe path in the builds directory to the windows PATH environment variable.
-   - Follow the instructions on the OmniSharpServer github site to clone and build the git repository :: https://github.com/OmniSharp/omnisharp-server
-   - add the following to init.el
-   (setq omnisharp--curl-executable-path "e:/dev/curl-7.41.0/builds/libcurl-vc-x86-release-dll-ipv6-sspi-winssl/bin/curl.exe")
-   (setq omnisharp-server-executable-path "e:/dev/experiments/OmniSharpServer/OmniSharp/bin/Debug/OmniSharp.exe")
-   (setq omnisharp--windows-curl-tmp-file-path "e:/dev/experiments/OmniSharpServer/tmp/omnisharpCurlTmp.cs")   
-   - Now test that OmniSharp will start with M-x Omnisharp-start-omnisharp-server. Then provide the full path to a solution file.
-     - M-x projectile-compile-buffer :: then provide the build command
-** Omnisharp-emacs
-   - https://github.com/OmniSharp/omnisharp-emacs :: project URI with great documentation
-   - omnisharp-build-in-emacs :: builds the solution in emacs. Requires omni-sharp-mode
+** Boot Process
+  1. Boot loader loads Linux.
+  2. Linux assumes control of the system.
+  3. Linux prepares its memory structures and drivers
+  4. Hands control to Init.
+  5. Init makes sure that at the end of the boot process, all necessary services are running and the user is able to log in.
+  6. Init launches udev daemon which will further load up and prepare the system based on the detected devices.
+  7. Udev mounts the remaining file systems waiting to be mounted.
+  8. Udev starts the remaining services waiting to be started.
+      
+** Initramfs
+*** The Initial RAM File System
+  - Based on tmpfs
+  - Because it is a size-flexible, in-memory lightweight file system it does not use a seperate block device so no caching was done. It does not have the overhead of an entire file system.
+  - Contains the tools and scripts needed to mount the file systems before the init binary on the real root file system is called.
+    - The tools can be the decryption abstraction layers (for encrypted file systems), logical volume mangers, software raid, bluetooth driver based file system loaders, etc.
+  - All files, tools, libraries, configuration settings (if applicable), etc are put into a cpio archive.
+*** From creation to execution
+  1. The cpio archive is compressed using gzip and stored in the /boot partition along side the linux kernel.
+  2. The boot loader will let the linux kernel know where the cpio archive is at boot time so that the kernel can load the initramfs.
+  3. The Linux kernel will create a tmpfs file system, extract the contents of the cpio archive into it, and then launch the init script located in the root of the tmpfs file system.
+  4. The init script will then perform what ever tasks are necessary to ensure that it will be able to mount the real root file system.
+    - It may have to decrypt the real root file system, other vital file systems, and mount them among possibly other things depending on what is needed.
+  5. The init script from the initramfs will then switch the root towards the real root file system
+  6. Lastly the initramfs init script will call /sbin/init (the init script on the real root file system)
+  7. The boot process will continue as normal.
+** Gentoo
+*** Use Variables
+    - If a use variable has a * by it that means that it changed since the last build.
+*** Hardened Profile
+**** PIC (Position Independent Code)
+     - Functions and data are accessed through an indirect table called the Global Offset Table (GOT).
+     - The purpose of indirect addressing is to fascillitate the access of functions and data independently of the corresponding load address. Only the symbols in the text segment exported in the GOT need updating at run-time deending on the current load address of the various shared libraries in the address space of the running process.
+     - Similarly, procedure calls to globally defined functions are redirected through the "Procedure Linkage Table" (PLT) residing in the data segment of the core image. This avoids runtime modifications of the text segment.
+     - The Linker-editor allocates the GOT and PLT when combining the PIC object files into an image for mapping into the process address space.
+     - The Linker-editor collects all symbols that may be needed by the run-time link-editor and stores these along with the image's text and data bits.
+     - Objects compiled as PIC allow the OS to load the object at any address in preperation for execution with slight overhead.
+     - The libtool builds PIC objects for use in shared libraries and non-PIC objects for use in static libraries. PIC compilation is required for objects in a shared library.
+     - libtool compiles PIC objects with '*.lo' extension and non-PIC objects with '*.o' extension.
+     - In practice PIC objects can be linked into static archive and often non-PIC objects can be similarly linked into shared archives both with execution and load speed overhead.
+     - If the shared object is built from code that is not PIC then the text segment will usually require a large number of relocations to be performed at runtime. The system overhead from the run-time linker required to handle this can cause serious performance degradation.
+     - =# readelf -d foo= :: If the output contains a TEXTREL entry then text relocations exist.
+**** PaX
+     - Purpose is to protect against a class of exploits that give an attacker arbitrary read / write access to the attacked task's address space. These exploits include buffer and heap overflows and similar attacks. PaX is the first line of defense offered by Hardened Gentoo.
+     - Implements the least privilege protections for memory pages. i.e computer programs should only  be allowed to do what they have to do in order to be able to execute properly and nothing more.
+     - The exploit techniques that PaX defends against include:
+       1. Introduce / execute arbitrary code
+       2. execute existing code out of original program order
+       3. execute existing code in original program order with arbitrary data
+     - References:
+       - Gentoo Hardened Introduction :: https://wiki.gentoo.org/wiki/Hardened/Introduction_to_Hardened_Gentoo#Technologies_Offered
+       - Project site :: http://pax.grsecurity.net/
+       - Quickstart :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart
+     - Adds security enhancement to the area between both kernel and userland.
+     - Patch to the kernel that provides hardening in the following ways:
+       1. Judicious enforcement of non-executable memory
+       2. Address Space Layout Randomization (ASLR)
+          - Compiling with Position Independent Executable (PIE) allows ASLR to randomaize even the base address.
+       3. Miscellaneous hardening on stack and memory handling
+          - Erases stack frame when returning from a system call
+          - refusing to dereference user-land pointers in some context
+          - detecting overflows of certain reference counters
+          - correcting overflows of some integer counters
+          - enforcing the size on copies between kernel and user land
+          - providing extra entropy
+     - PaX Modes
+       - SOFTMODE
+         - PaX protection will not be enforced by default for those features which can be turned on or off at runtime.
+         - The "permit by default" mode.
+         - The user must explicitly mark executables to enforce PaX protection.
+       - non-SOFTMODE
+         - PaX protections are immediately activated.
+         - The "forbid by default" mode.
+         - The user must explicitly mark binaries to relax PaX protection selectively.
+       - 
+>>>>>>> 65de590651a01123802aa23bc394ef7f89769fb3
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs

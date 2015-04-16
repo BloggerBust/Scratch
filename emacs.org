@@ -15,7 +15,7 @@
 - Window :: any area that displays a buffer. An emacs frame may be split to contain many windows.
 - M-<chrs> :: Hold the Meta-key plus additional characters. In our case it is the Alt key.
 - C-<chrs> :: Hold the Ctrl key plus additional characters.
-
+            
 * Getting Help In Emacs
 - C-h k :: Brings up the help document for whatever command is entered
 - C-h f :: Describe function. If the point is on text that matches the name of a function, then that will become the default function to describe. Otherwise, a function name to describe may be entered.
@@ -166,7 +166,7 @@
    - C-c C-x :: prefix for operating at the org node level. What follows is standard emacs commands such as C-w for cut or M-w for copy etc.
    - C-c C-e :: launches export options
 *** Markup
-  - * :: header. Additive for increadsing depth.
+  - * :: header. Additive for increasing depth.
   - *<text>* :: emphasis.
   - -, +, 1, 1), 1. :: bullets
   - unordered lists use - or +
@@ -187,6 +187,17 @@
     - toggle will commit the edit to the code snippet.
   - =some code= :: surrounding text with equal signs gives inline code snippet.
 
+*** Lists
+    + M-<RET> (org-insert-heading)
+      + Inserts a new item at current level.
+    + M-S-<RET>
+      + Insert a new item with a checkbox
+    + M-left/right
+      + Increase/decrease the indentation of an item.
+    + M-S-<left>/<right>
+      + Increase/decrease the indentation of an item and its children.
+    + C-c -
+      + Cycle through bullets ('-','+','*','1.','1)')
 
 *** TODOs
     - C-c C-t :: Creates a TODO. This must be on a heading. Alternatively to add a todo you simply type TODO after heading markup.
@@ -255,6 +266,38 @@
        - $ cask :: this will download and install all of the dependencies.
      - Packages are stored in ~/.emacs.d/.cask/{version}/
      - cask update :: updates all of the packages.
+* Shells and Terms
+** Ansi-term
+   - C-c C-j :: switch to line mode
+   - C-c C-k ::: switch to char mode
+* Using emacs as a terminal multi-plexer
+  - M-x server-start :: turns any emacs session into a server
+  - emacs --dameon :: starts emacs as a background daemon. This 
+  - emacsclient -t :: connect to the emacs server with a terminal
+  - emacsclient -c :: same as -t, but opens a new graphical frame outside of the terminal.
+  - Can be used like screen to keep long running terminal sessions alive after disconnecting from the server by running emacs as a daemon and then connecting via emacsclient.
+  - C-x 5 0 :: Delete Frame. This will detatch emacsclient from the server by closing the emacsclient frame. This in turn closes the emacs client, but the server continues to run and may be attached to in the future.
+* OmniSharp 
+** Install Windows OmniSharp server
+   - install the omnisharp-emacs package from melpa
+   - download curl for windows :: http://curl.haxx.se/download.html
+   - cd /path-to-curl/winbuild
+     - review the BUILD.WINDOWS.txt build options
+     - $ nmake /f Makefile.vc mode=dll
+   - cd [path-to-OmniSharp\]
+     - mkdir tmp :: this is for the omnisharp curl tmp file path
+   - now add the curl.exe path in the builds directory to the windows PATH environment variable.
+   - Follow the instructions on the OmniSharpServer github site to clone and build the git repository :: https://github.com/OmniSharp/omnisharp-server
+   - add the following to init.el
+   (setq omnisharp--curl-executable-path "e:/dev/curl-7.41.0/builds/libcurl-vc-x86-release-dll-ipv6-sspi-winssl/bin/curl.exe")
+   (setq omnisharp-server-executable-path "e:/dev/experiments/OmniSharpServer/OmniSharp/bin/Debug/OmniSharp.exe")
+   (setq omnisharp--windows-curl-tmp-file-path "e:/dev/experiments/OmniSharpServer/tmp/omnisharpCurlTmp.cs")   
+   - Now test that OmniSharp will start with M-x Omnisharp-start-omnisharp-server. Then provide the full path to a solution file.
+     - M-x projectile-compile-buffer :: then provide the build command
+** Omnisharp-emacs
+   - https://github.com/OmniSharp/omnisharp-emacs :: project URI with great documentation
+   - omnisharp-build-in-emacs :: builds the solution in emacs. Requires omni-sharp-mode
+
 * Pain Points
   - Windows
     - projectile-grep failing
