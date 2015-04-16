@@ -275,7 +275,6 @@
          - The "forbid by default" mode.
          - The user must explicitly mark binaries to relax PaX protection selectively.
        - 
->>>>>>> 65de590651a01123802aa23bc394ef7f89769fb3
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
