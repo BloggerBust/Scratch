@@ -292,11 +292,170 @@
           - Does not modify the ELF object.
           - The file system and utilities used to copy, move and archive files must support xattrs.
             - Must support user.pax.* namespace in which the PaX flags are placed.
-            - Do not enable the entire user.* namespace because it may open attack vectors.
+            - Do not enable the entire user.* namespace because it may open attackvectors.
             - Must support security.*, trusted.* namespaces.
      - Building a PaX Kernel
        - Reference :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Building_a_PaX_Kernel
 
+*** ZFS
+    - References:
+      - https://wiki.gentoo.org/wiki/ZFS/Features :: Detailed list of features
+      - https://wiki.gentoo.org/wiki/ZFS :: Gentoo wiki guide
+      - https://pthree.org/2012/12/04/zfs-administration-part-i-vdevs/ :: Administraiton Guide
+      - http://docs.oracle.com/cd/E19253-01/819-5461/ :: Official Oracle Docs
+    - ARC :: Adaptive Replacement Cache
+    - ARC page replacement agolrithm is used instead of the Last Recently used page replacement algorithm.
+    - Minumum and Maximum memory usage allocated to ARC varies based on system memory.
+      - Default Min :: 1/32 of all memory, or 64 MB, whichever is more.
+      - Default Max :: the larger of 1/2 of system memory or 64 MB.
+      - Linux accounts for memory used by arc differently than memory used by the page cache. Memory used by ARC is included under "used" not "cached" in the output used by the 'free' program. This can give the impression that ARC will use all of system memory if given opportunity.
+      - ARC memory usage is tunable via zfs_arc_min and zfs_arc_max. These properties may be set in 3 ways:
+        1. at runtime.
+           - =root # echo 536870912 >> /sys/module/zfs/parameters/zfs_arc_max=
+           - Changes through sysfs do not persist across boots.
+           - The value in sysfs will be 0 when the value has not been manually configured.
+           - The current setting can be viewed by looking at c_max in /proc/spl/kstat/zfs/arcstats
+        2. via /etc/modprobe.d/zfs.conf
+           - =root # "options zfs zfs_arc_max=536870912" >> /etc/modprobe.d/zfs.conf=
+        3. Kernel command line
+           - =zfs.zfs_arc_max=536870912=
+      - Zpool Version Update
+        - When sys-fs/zfs is updated likely the version of ZFS has been incremented. The status of zpools will indicate a warning that a newer version is available and that the zpools can be upgraded.
+        - =root # zpool upgrade -v= :: Display current version on zpool
+        - =root # zpool upgrade zfs_test= :: upgrade the version of zpool zfs_test.
+        - =root # zpool upgrade -a= :: upgrade the version of all zpools in the system.
+**** Virtual Devices (VDEVs)
+     - A meta-device representing one or more physical devices.
+     - 7 types of VDEVs:
+       - Disk (default) :: The physical drives in your system.
+       - File :: The absolute path of pre-allocated files/images.
+       - Mirror :: Standard software RAID-1 mirror.
+       - Spare :: Hard drives marked as a "hot spare" for ZFS software RAID.
+       - Cache :: Device used for a level 2 adaptive read cache (L2ARC).
+       - Log :: A seperate log (SLOG) called the "ZFS Intent Log" or ZIL.
+     - VDEVs are dynamically striped.
+     - Caveats
+       - Devices cannot be removed from a VDEV
+       - RAID-(n) is faster than RAID-(n+1)
+       - Hot spares are not dynamically added unless configured to.
+       - A zpool will not dynamically resize when larger disks fill the pool unless you enable the setting (off by default) BEFORE the first disk replacement.
+       - Will know about "advanced format" 4K sector drives iif the drive reports such.
+       - Duplication is EXTREMELY EXPENSIVE, will cause performance degredation if not enough RAM is available.
+       - Duplication is pool-wide, not local to the filesystem.
+       - Compression is EXTREMLY CHEAP on the CPU, yet it is disabled by default.
+       - ZFS suffers a great deal from fragmentation. Full ZPOOLS will experience performance degredation
+     - Creation
+       - A Simple pool
+         #+BEGIN_SRC sh
+           # zpool create tank sde sdf
+           # zpool status tank
+ pool: tank
+ state: ONLINE
+ scan: none requested
+config:
+
+	NAME        STATE     READ WRITE CKSUM
+	tank        ONLINE       0     0     0
+	  sde       ONLINE       0     0     0
+	  sdf       ONLINE       0     0     0
+	  sdg       ONLINE       0     0     0
+	  sdh       ONLINE       0     0     0
+
+errors: No known data errors
+         #+END_SRC
+       - A simple mirrored zpool
+         #+BEGIN_SRC sh
+           # zpool create tank mirror sde sdf sdg sdh
+           # zpool status tank
+ pool: tank
+ state: ONLINE
+ scan: none requested
+config:
+
+	NAME        STATE     READ WRITE CKSUM
+	tank        ONLINE       0     0     0
+	  mirror-0  ONLINE       0     0     0
+	    sde     ONLINE       0     0     0
+	    sdf     ONLINE       0     0     0
+	    sdg     ONLINE       0     0     0
+	    sdh     ONLINE       0     0     0
+
+errors: No known data errors
+         #+END_SRC
+       - Nested VDEVs
+         #+BEGIN_SRC sh
+           # zpool create tank mirror sde sdf mirror sdg sdh
+           # zpool status
+  pool: tank
+ state: ONLINE
+ scan: none requested
+config:
+
+	NAME        STATE     READ WRITE CKSUM
+	tank        ONLINE       0     0     0
+	  mirror-0  ONLINE       0     0     0
+	    sde     ONLINE       0     0     0
+	    sdf     ONLINE       0     0     0
+	  mirror-1  ONLINE       0     0     0
+	    sdg     ONLINE       0     0     0
+	    sdh     ONLINE       0     0     0
+
+errors: No known data errors
+         
+         #+END_SRC
+       - File VDEVs (useful for experiments)
+         - When creating cannot use relative paths.
+         - The image file must be preallocated, not sparse or thin provisioned.
+         #+BEGIN_SRC sh
+         # for i in {1..4}; do dd if=/dev/zero of=/tmp/file$i bs=1G count=4 &> /dev/null; done
+         # zpool create tank /tmp/file1 /tmp/file2 /tmp/file3 /tmp/file4
+         # zpool status tank
+  pool: tank
+ state: ONLINE
+ scan: none requested
+config:
+
+	NAME          STATE     READ WRITE CKSUM
+	tank          ONLINE       0     0     0
+	  /tmp/file1  ONLINE       0     0     0
+	  /tmp/file2  ONLINE       0     0     0
+	  /tmp/file3  ONLINE       0     0     0
+	  /tmp/file4  ONLINE       0     0     0
+
+errors: No known data errors
+         
+         #+END_SRC
+       - Hybrid pools
+         - "tank" pool is composed of "mirror-0" and "mirror-1" VDEVs for long-term persistent storage. 
+         - Neither the "logs" pool nor the "cache" pool are long-term storage for the pool, thus creating a "hybrid pool" steup.
+         #+BEGIN_SRC sh
+           # zpool create tank mirror /tmp/file1 /tmp/file2 mirror /tmp/file3 /tmp/file4 log mirror sde sdf cache sdg sdh
+           # zpool status tank
+  pool: tank
+ state: ONLINE
+ scan: none requested
+config:
+
+	NAME            STATE     READ WRITE CKSUM
+	tank            ONLINE       0     0     0
+	  mirror-0      ONLINE       0     0     0
+	    /tmp/file1  ONLINE       0     0     0
+	    /tmp/file2  ONLINE       0     0     0
+	  mirror-1      ONLINE       0     0     0
+	    /tmp/file3  ONLINE       0     0     0
+	    /tmp/file4  ONLINE       0     0     0
+	logs
+	  mirror-2      ONLINE       0     0     0
+	    sde         ONLINE       0     0     0
+	    sdf         ONLINE       0     0     0
+	cache
+	  sdg           ONLINE       0     0     0
+	  sdh           ONLINE       0     0     0
+
+errors: No known data errors
+         
+         #+END_SRC
+         - In practice, use the device id found in /dev/disk/by-id when identifying the devices for the "logs" and "cache" pools. They may be assigned different device names from one boot to another, unlike devices in the main pool.
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
