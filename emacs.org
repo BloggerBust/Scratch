@@ -303,3 +303,7 @@
     - projectile-grep failing
     - projectile-ag fails because ag is not available
     - omnisharp-find-usages seems to only find usages in the current file, rather than anywhere in the solution.
+* TODO [/] Work emacs init.el
+  [ ] Install helm package
+  [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
+  [ ] Resolve key-binding conflict between ace-jump-mode and org-table-blank-field.

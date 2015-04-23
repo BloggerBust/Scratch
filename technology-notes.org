@@ -456,6 +456,22 @@ errors: No known data errors
          
          #+END_SRC
          - In practice, use the device id found in /dev/disk/by-id when identifying the devices for the "logs" and "cache" pools. They may be assigned different device names from one boot to another, unlike devices in the main pool.
-* TODO [/] Work emacs init.el
-  [ ] Install helm package
-  [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
+**** RAIDZ
+     - References:
+       - http://en.wikipedia.org/wiki/RAID
+     - Disk Striping
+       - References
+         - http://en.wikipedia.org/wiki/Data_striping
+       - The process of segmenting a body of logically sequential data into data blocks so that consecutive data blocks are spread accross multiple storage devices.
+       - Storage systems vary in the way striping is performed. Data may be stripped at the byte, block or partition level, and may be stripped accross all or some of the disks in a cluster.
+       - Main advantage is higher performance. By spreading data accross multiple devices that can be accessed concurrently, total throughput is increased.
+       - Balances I/O load accross an array of disks.
+     - Standard Parity RAID
+       - RAID-5
+         - References:
+           - http://blog.open-e.com/how-does-raid-5-work/
+         - Consists of block level striping with distributed parity.
+         - Minumum of 3 disks. Data is stripped accross two disks. A pairity bit is calculated such that the XOR of all three stripes in the set calculate to zero. The parity bit is then written to the chosen 3rd disk.
+         - No single disk is dedicated to parity. Two disk are chosen to be striped and the third is chosen for parity such that the distribution of parity bits is even accross all drives.
+         - Resilant against a failure of any one disk. The data on the failed disk can be recalculated via the remaining disks and thus restored.
+         - THE PROBLEM WITH RAID-5 "however, we have a problem"
