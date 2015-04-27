@@ -466,12 +466,30 @@ errors: No known data errors
        - Storage systems vary in the way striping is performed. Data may be stripped at the byte, block or partition level, and may be stripped accross all or some of the disks in a cluster.
        - Main advantage is higher performance. By spreading data accross multiple devices that can be accessed concurrently, total throughput is increased.
        - Balances I/O load accross an array of disks.
-     - Standard Parity RAID
-       - RAID-5
-         - References:
-           - http://blog.open-e.com/how-does-raid-5-work/
-         - Consists of block level striping with distributed parity.
-         - Minumum of 3 disks. Data is stripped accross two disks. A pairity bit is calculated such that the XOR of all three stripes in the set calculate to zero. The parity bit is then written to the chosen 3rd disk.
-         - No single disk is dedicated to parity. Two disk are chosen to be striped and the third is chosen for parity such that the distribution of parity bits is even accross all drives.
-         - Resilant against a failure of any one disk. The data on the failed disk can be recalculated via the remaining disks and thus restored.
-         - THE PROBLEM WITH RAID-5 "however, we have a problem"
+     - Standard Parity RAID (i.e. RAID-5)
+       - References:
+         - http://blog.open-e.com/how-does-raid-5-work/
+       - Consists of block level striping with distributed parity. The stripe width is thus statically set at creation.
+       - Minumum of 3 disks. Data is stripped accross two disks. A pairity bit is calculated such that the XOR of all three stripes in the set calculate to zero. The parity bit is then written to the chosen 3rd disk.
+       - No single disk is dedicated to parity. Two disk are chosen to be striped and the third is chosen for parity such that the distribution of parity bits is even accross all drives.
+       - Resilant against a failure of any one disk. The data on the failed disk can be recalculated via the remaining disks and thus restored.
+       - RAID-5 write hole
+         - Caused by inturrupted destaging of writes to disk, such as a power failure.
+         - Solutions to the RAID-5 write hole are either slow (software based) or expensive (hardware based).
+         - RAID-5 has fallen out of favor as a result.
+       - If the data being written to the strip is less than the stripe-size, much time is wasted reading the data on the rest of the stripe to ensure that the parity satisfies the constraint that the XOR of all three stripes in the set calculate to zero.
+         - Thus data is read and written that is not pertinent to the application doing the work.
+         - Expensive NVRAM hardware RAID cards can hide the latency from the end user.
+       - The RAID-5 write hole and the performance impact of writing data smaller than the stripe size to disk motivated the ZFS team to re-think parity-based RAID.
+     - ZFS RAIDZ
+       - Stripe width dynamically allocated.
+         - Every block stransactionally flushed to disk is its own stripe width.
+         - Every RAIDZ write is a full stripe write.
+         - The parity bit is flushed with the stripe simultaneously. This completely eliminates the possability of a write hole.
+           - In the event of a power failure, either the latest data was flushed to disk or it wasn't, but the disks will not be inconsistent.
+         - Cannot calculate parity simply by the rule -- every disk XORs to zero because the stripe size is dynamic with respect to the size of the datablock being written to disk.
+           - ZFS metadata is used to determine the RAIDZ geometry on every read.
+           - Reading file system metadata to contruct the RAID stripe means reading live running data only, not dead inpertinent or unallocated data.
+           - No need for expensive NVRAM to buffer writes or for battery backup to protect against write hole.
+     - Self-healing RAID
+       - ZFS can detect silent errors and fix them on the fly.
