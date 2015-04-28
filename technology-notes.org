@@ -492,4 +492,22 @@ errors: No known data errors
            - Reading file system metadata to contruct the RAID stripe means reading live running data only, not dead inpertinent or unallocated data.
            - No need for expensive NVRAM to buffer writes or for battery backup to protect against write hole.
      - Self-healing RAID
-       - ZFS can detect silent errors and fix them on the fly.
+       - ZFS can detect silent errors and fix them on the fly (Not possible if RAID and filesystem are seperate)
+         - When an application requests data ZFS constructs the stripe and compares each block against a default checksum in the metadata. If the read stripe does not match the checksum, ZFS finds the bad block, reads the parity and fixes it through combinatorial reconstruction and returns good data to the application.
+         - If the stripe width is longer than the disks in the array and there is a disk failure there would not be enough data in the parity for combinatorial reconstruction, thus ZFS can mirror data in the stripe to prevent this from happening. :: Bad wording. I re-worded the original to try to make sense of it. Is this what was meant???
+     - RAIDZ-{1,2,3}
+       - RAIDZ-n, where n is the number of parity bits distributed accross all the disks in the array.
+       - Stripe width is variable. Disk Array Size < Stripe width || Disk Array Size == Stripe Width || Stripe Width < Disk Array Size.
+       - RAIDZ-n allows for n disk failures.
+       - RAIDZ-n requires Disk Array Size = n + 2.
+       - RAIDZ-n capacity = Disk Array Size * Capacity of smallest disk - n parity storage
+     - Hybrid RAIDZ
+       - A stripe of multiple RAIDZ VDEVS.
+       - Increase performance at the cost of available disk storage.
+       - Stripe width is variable within each nested RAIDZ VDEV.
+       - Each RAIDZ level follows the same rules outlined in RAIDZ-{1,2,3} above.
+         - A stripe of 3 RAIDZ-n VDEVS can suffer a total of 3*n disks. n per VDEV.
+     - RAIDZ Benchmark :: Recommended to use the tool IOZone 3 to benchmark and stress the array.
+       - Mirrors always outperform RAIDZ levels.
+       - performs(RAIDZ-n) > performs(RAIDZ-{n-1})
+       - More parity bits mean longer read / write times.
