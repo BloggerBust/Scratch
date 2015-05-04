@@ -616,6 +616,29 @@ errors: No known data errors
          + WRITE- I/O errors occurred while issuing a write request.
          + CHKSUM- Checksum errors. The device returned corrupted data as the result of a read request.
 
+**** Zpool Properties
+     - As with many file systems available for GNU/Linux, ZFS has various flags that can be set to tune the file systems behavior.
+     - Zpool properties can be set to modify the behavior of both the pool and the datasets that the pool contains.
+     - Some properties are read-only.
+     - See man zpool for details on properties.
+     - Get properties
+       - When properties are retrieved the following fields are displayed
+         | name     | Name of storage pool                         |
+         | property | property name                                |
+         | value    | property value                               |
+         | source   | Property source, either 'default' or 'local' |
+       - == root # zpool get -p "all" == :: Retrieves a list of all properties 
+       - == root # zpool get -p PropName1,PropName2 == :: retrieves property details for the specified list of properties delimited by a comma with no white space i.e. PropName1,PropName2
+     - Set properties
+       - Properties that require a string argument do not have an easy way to get the value back to a default value. With other property types, if you try to set the property to an invalid argument then an error will print to the screen displaying available valid values, but it will not indicate which was the default value.
+       - If the source column has "default" then the setting has not been user-defined, if it is "local", then it was user-defined.
+       - == root # zpool set comment="Contact admins@example.com" tank == :: sets the comment property. This will also change the source from "default" to "local"
+       - == root # zpool create -o ashift=12 tank raid1 sda sdb == :: an example of setting properties at zpool creation time.
+     - Properties apply to the whole pool, consequently ZFS datasets inherit property settings from the pool.
+     - Some properties that are set on the dataset also apply to the whole pool
+     - Setting properties only applies to data moving forward and never backward.
+     - Properties are not retroactive i.e. if you replace a drive with a larger drive and then set autoexpand property after it has been installed it will not autoexpand. It will instead appear as a smaller drive.
+     - 
 * TODO
   - Install Cron
   - Schedual Zpool scrub
