@@ -511,3 +511,111 @@ errors: No known data errors
        - Mirrors always outperform RAIDZ levels.
        - performs(RAIDZ-n) > performs(RAIDZ-{n-1})
        - More parity bits mean longer read / write times.
+     
+**** ZFS Intent Log (ZIL and SLOG)
+     - References:
+      https://pthree.org/2012/12/06/zfs-administration-part-iii-the-zfs-intent-log/
+     - The Zil and the Seperate Intent Log (SLOG) log what is currently in system memory so that the system may recover in the event of a power loss. This can be setup at anytime so I am going to skip it for now.
+**** The Adjustable Replacement Cache (ARC)
+     - The purpose of this is to cache data for quick retrieval to increase performance. This is a good idea, but can be added later so I am going to skip this for now.
+**** Exporting and Importing Zpools
+     - Exporting Storage Pools
+       - When exporting the following happens:
+         - Causes the kernel to flush all pending data to disk
+         - Writes data to the disk acknowledging that the export was done
+         - Removes all knowledge that the storage pool existed in the system
+       - Exporting the storage pool is necessary before importing the storage pool into a new system. Also, unwritten data may not have been flushed to disk.
+       - == root # zpool export tank ==
+         - Will attempt to unmount all ZFS datasets as well as the pool
+         - If the zpool refuses to export you can add -f to force the export.
+     - Importing Storage Pools
+       - Once the drives have been physically installed they may be imported.
+       - == root # zpool import tank == :: Imports the zpool tank
+       - Once imported it is a good idea to check the status of the zpool
+       - == root # zpool status tank
+         - A status of ONLINE means that everything is healthy
+         - Status FAULTED :: means one or more drives appear faulty to the system
+         - Refer to documentation for troubleshooting status codes
+       - Import multiple zpools by listing them after the import command delimited by white space, or by passing the -a flag for importing all known zpools.
+         - == root # zpool import tank1 tank2 tank3
+         - == root # zpool import -a
+     - Recovering a Destroyed Pool
+       - Destroying a pool does not wipe the data on the disks. The pool can be discovered.
+       - == (server A) root # zpool destroy tank == :: Does not wipe data
+         == (server B) root # zpool import -D == :: Lists destroyed pools.
+         - Run the import command again specifying the pool name to bring it fully online.
+         - If more than one storage pool is found with the same name then the unique identifier of the storage pool must be used as the argument to import to bring it fully online.
+     - Upgrading Storage Pools
+       - Once a zpool has been upgraded servers running older versions of zpool will not be able to import it.
+       - There is no way to downgrade.
+       - == root # zpool upgrade -v == :: Outputs the version of ZFS pool that the system is currently running. Display a list of supported zpool versions and some descriptions for each.
+       - == root # zpool upgrade -a == :: Upgrades the zpool and enables all supported features. See man page to upgrade to a specific version and feature set.
+       - On shutdown the zfs init script may just unmount the pools and not export them in which case the zpools would not be able to be imported to by another system. If this is the case you will have to explicitly export the zpools first.
+
+**** Scrub and Resilver
+     - Standard Validation
+       - integrity checking tools require the disks to be offline.
+       - The filesystem knows nothing about the underlying data structures such as LVM or RAID.
+       - Software RAID has no idea what disk contains good or bad data, so either could be served (silent data errors).
+       - Nothing can be done about silent data errors.
+     - ZFS Scrubbing
+       - Scrubbing the disk is used to detect and correct silent data errors.
+       - Scrubbing disks can be done on a live running system with no downtime.
+       - The scrub involves checking every block in the storage pool against its known checksum using the "fletcher4" (default) 256-bit algorithm.
+       - Must be performed explicitly.
+       - Recommended that scrubbing is performed on a regularly scheduled interval (good job for chron).
+       - == root # scrub tank == :: performs a scrub of the pool.
+       - Can check status during a scrub.
+       - Scrubs impact performance of disks.
+       - == root # scrub -s tank == Stops a scrub in progress.
+       - == 0 2 * * 0 /sbin/zpool scrub tank == crontab to perform scrub every Sunday at 2 in the morning.
+     - Self Healing Data
+       - Requires redundancy. i.e. mirror
+       - Will not only detect corrupt data on a scrub, but will correct the bad blocks if good data exists on a different disk.
+       - I think that this zfs can self heal in response to realtime interaction with an application and is not limited to explicit scrubs. (verify this)
+     - Resilvering Data
+       - References:
+         - http://docs.oracle.com/cd/E19082-01/817-2271/gbbvf/index.html :: regarding damaged devices with ZFS
+       - Same concept as rebuilding or resyncing data onto a new disk in the array.
+       - With Software RAID there is no distinction between which blocks are live and which are not. The rebuild starts at the begining of the disk and does not stop until it reaches the end of the disk.
+       - ZFS knows about the RAID structure and has a smarter algorithm for rebuilding the data.
+         - Does not sync the free disk blocks, only live blocks. If storage pool is only partially filled this can save significant time.
+         - In ZFS the process of rebuilding, resyncing or reconstructing is kown is Resilvering.
+         - If zpool status is "DEGRADED" then a disk needs to be replaced. Identify the disk that needs to be replaced with teh following command
+           #+BEGIN_SRC 
+           # for i in a b c d e f g; do echo -n "/dev/sd$i: "; hdparm -I /dev/sd$i | awk '/Serial Number/ {print $3}'; done
+/dev/sda: OCZ-9724MG8BII8G3255
+/dev/sdb: OCZ-69ZO5475MT43KNTU
+/dev/sdc: WD-WCAPD3307153
+/dev/sdd: JP2940HD0K9RJC
+/dev/sde: /dev/sde: No such file or directory
+/dev/sdf: JP2940HD0SB8RC
+/dev/sdg: S1D1C3WR
+           #+END_SRC
+           The above example shows that /dev/sde needs to be replaced since the command could not find the device.
+         - After identifying the dead disk go to the storage array and find which serial number was not printed. The one that was not printed needs to be replaced. Pull the disk and replace it with a new one.
+         - Restart the system and see if /dev/sde is repopulated by running the command again.
+         - Then issue the following command to replace sde with the new disk at /dev/sde (note the new disk may not be /dev/sde in which case the command would be slightly different to reflect that)
+           == root # zpool replace tank sde sde == Rebuilds the data blocks on the new disk until it is in a completely healthy state. Check the status to know when the process has completed.
+     - Identifying Pool Problems
+       - == zpool status -x == :: the x flag only displays the status of pools that are exhibiting errors or are unavailable.
+       - The zpool status fields:
+         + pool- The name of the pool.
+         + state- The current health of the pool. This information refers only to the ability of the pool to provide the necessary replication level.
+         + status- A description of what is wrong with the pool. This field is omitted if no problems are found.
+         + action- A recommended action for repairing the errors. This field is an abbreviated form directing the user to one of the following sections. This field is omitted if no problems are found.
+         + see- A reference to a knowledge article containing detailed repair information. Online articles are updated more often than this guide can be updated, and should always be referenced for the most up-to-date repair procedures. This field is omitted if no problems are found.
+         + scrub- Identifies the current status of a scrub operation, which might include the date and time that the last scrub was completed, a scrub in progress, or if no scrubbing was requested.
+         + errors- Identifies known data errors or the absence of known data errors.
+         + config- Describes the configuration layout of the devices comprising the pool, as well as their state and any errors generated from the devices. The state can be one of the following: ONLINE, FAULTED, DEGRADED, UNAVAILABLE, or OFFLINE. If the state is anything but ONLINE, the fault tolerance of the pool has been compromised.
+       - The columns in the status output, "READ", "WRITE" and "CHKSUM" are defined as follows:
+
+         + NAME- The name of each VDEV in the pool, presented in a nested order.
+         + STATE- The state of each VDEV in the pool. The state can be any of the states found in "config" above.
+         + READ- I/O errors occurred while issuing a read request.
+         + WRITE- I/O errors occurred while issuing a write request.
+         + CHKSUM- Checksum errors. The device returned corrupted data as the result of a read request.
+
+* TODO
+  - Install Cron
+  - Schedual Zpool scrub
