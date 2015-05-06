@@ -297,7 +297,8 @@
      - Building a PaX Kernel
        - Reference :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Building_a_PaX_Kernel
 
-*** ZFS
+*** ZFS 
+**** Zpool Administration
     - References:
       - https://wiki.gentoo.org/wiki/ZFS/Features :: Detailed list of features
       - https://wiki.gentoo.org/wiki/ZFS :: Gentoo wiki guide
@@ -324,7 +325,7 @@
         - =root # zpool upgrade -v= :: Display current version on zpool
         - =root # zpool upgrade zfs_test= :: upgrade the version of zpool zfs_test.
         - =root # zpool upgrade -a= :: upgrade the version of all zpools in the system.
-**** Virtual Devices (VDEVs)
+***** Virtual Devices (VDEVs)
      - A meta-device representing one or more physical devices.
      - 7 types of VDEVs:
        - Disk (default) :: The physical drives in your system.
@@ -456,103 +457,103 @@ errors: No known data errors
          
          #+END_SRC
          - In practice, use the device id found in /dev/disk/by-id when identifying the devices for the "logs" and "cache" pools. They may be assigned different device names from one boot to another, unlike devices in the main pool.
-**** RAIDZ
-     - References:
-       - http://en.wikipedia.org/wiki/RAID
-     - Disk Striping
-       - References
-         - http://en.wikipedia.org/wiki/Data_striping
-       - The process of segmenting a body of logically sequential data into data blocks so that consecutive data blocks are spread accross multiple storage devices.
-       - Storage systems vary in the way striping is performed. Data may be stripped at the byte, block or partition level, and may be stripped accross all or some of the disks in a cluster.
-       - Main advantage is higher performance. By spreading data accross multiple devices that can be accessed concurrently, total throughput is increased.
-       - Balances I/O load accross an array of disks.
-     - Standard Parity RAID (i.e. RAID-5)
-       - References:
-         - http://blog.open-e.com/how-does-raid-5-work/
-       - Consists of block level striping with distributed parity. The stripe width is thus statically set at creation.
-       - Minumum of 3 disks. Data is stripped accross two disks. A pairity bit is calculated such that the XOR of all three stripes in the set calculate to zero. The parity bit is then written to the chosen 3rd disk.
-       - No single disk is dedicated to parity. Two disk are chosen to be striped and the third is chosen for parity such that the distribution of parity bits is even accross all drives.
-       - Resilant against a failure of any one disk. The data on the failed disk can be recalculated via the remaining disks and thus restored.
-       - RAID-5 write hole
-         - Caused by inturrupted destaging of writes to disk, such as a power failure.
-         - Solutions to the RAID-5 write hole are either slow (software based) or expensive (hardware based).
-         - RAID-5 has fallen out of favor as a result.
-       - If the data being written to the strip is less than the stripe-size, much time is wasted reading the data on the rest of the stripe to ensure that the parity satisfies the constraint that the XOR of all three stripes in the set calculate to zero.
-         - Thus data is read and written that is not pertinent to the application doing the work.
-         - Expensive NVRAM hardware RAID cards can hide the latency from the end user.
-       - The RAID-5 write hole and the performance impact of writing data smaller than the stripe size to disk motivated the ZFS team to re-think parity-based RAID.
-     - ZFS RAIDZ
-       - Stripe width dynamically allocated.
-         - Every block stransactionally flushed to disk is its own stripe width.
-         - Every RAIDZ write is a full stripe write.
-         - The parity bit is flushed with the stripe simultaneously. This completely eliminates the possability of a write hole.
-           - In the event of a power failure, either the latest data was flushed to disk or it wasn't, but the disks will not be inconsistent.
-         - Cannot calculate parity simply by the rule -- every disk XORs to zero because the stripe size is dynamic with respect to the size of the datablock being written to disk.
-           - ZFS metadata is used to determine the RAIDZ geometry on every read.
-           - Reading file system metadata to contruct the RAID stripe means reading live running data only, not dead inpertinent or unallocated data.
-           - No need for expensive NVRAM to buffer writes or for battery backup to protect against write hole.
-     - Self-healing RAID
-       - ZFS can detect silent errors and fix them on the fly (Not possible if RAID and filesystem are seperate)
-         - When an application requests data ZFS constructs the stripe and compares each block against a default checksum in the metadata. If the read stripe does not match the checksum, ZFS finds the bad block, reads the parity and fixes it through combinatorial reconstruction and returns good data to the application.
-         - If the stripe width is longer than the disks in the array and there is a disk failure there would not be enough data in the parity for combinatorial reconstruction, thus ZFS can mirror data in the stripe to prevent this from happening. :: Bad wording. I re-worded the original to try to make sense of it. Is this what was meant???
-     - RAIDZ-{1,2,3}
-       - RAIDZ-n, where n is the number of parity bits distributed accross all the disks in the array.
-       - Stripe width is variable. Disk Array Size < Stripe width || Disk Array Size == Stripe Width || Stripe Width < Disk Array Size.
-       - RAIDZ-n allows for n disk failures.
-       - RAIDZ-n requires Disk Array Size = n + 2.
-       - RAIDZ-n capacity = Disk Array Size * Capacity of smallest disk - n parity storage
-     - Hybrid RAIDZ
-       - A stripe of multiple RAIDZ VDEVS.
-       - Increase performance at the cost of available disk storage.
-       - Stripe width is variable within each nested RAIDZ VDEV.
-       - Each RAIDZ level follows the same rules outlined in RAIDZ-{1,2,3} above.
-         - A stripe of 3 RAIDZ-n VDEVS can suffer a total of 3*n disks. n per VDEV.
-     - RAIDZ Benchmark :: Recommended to use the tool IOZone 3 to benchmark and stress the array.
-       - Mirrors always outperform RAIDZ levels.
-       - performs(RAIDZ-n) > performs(RAIDZ-{n-1})
-       - More parity bits mean longer read / write times.
-     
-**** ZFS Intent Log (ZIL and SLOG)
-     - References:
-      https://pthree.org/2012/12/06/zfs-administration-part-iii-the-zfs-intent-log/
-     - The Zil and the Seperate Intent Log (SLOG) log what is currently in system memory so that the system may recover in the event of a power loss. This can be setup at anytime so I am going to skip it for now.
-**** The Adjustable Replacement Cache (ARC)
-     - The purpose of this is to cache data for quick retrieval to increase performance. This is a good idea, but can be added later so I am going to skip this for now.
-**** Exporting and Importing Zpools
-     - Exporting Storage Pools
-       - When exporting the following happens:
-         - Causes the kernel to flush all pending data to disk
-         - Writes data to the disk acknowledging that the export was done
-         - Removes all knowledge that the storage pool existed in the system
-       - Exporting the storage pool is necessary before importing the storage pool into a new system. Also, unwritten data may not have been flushed to disk.
-       - == root # zpool export tank ==
-         - Will attempt to unmount all ZFS datasets as well as the pool
-         - If the zpool refuses to export you can add -f to force the export.
-     - Importing Storage Pools
-       - Once the drives have been physically installed they may be imported.
-       - == root # zpool import tank == :: Imports the zpool tank
-       - Once imported it is a good idea to check the status of the zpool
-       - == root # zpool status tank
-         - A status of ONLINE means that everything is healthy
-         - Status FAULTED :: means one or more drives appear faulty to the system
-         - Refer to documentation for troubleshooting status codes
-       - Import multiple zpools by listing them after the import command delimited by white space, or by passing the -a flag for importing all known zpools.
-         - == root # zpool import tank1 tank2 tank3
-         - == root # zpool import -a
-     - Recovering a Destroyed Pool
-       - Destroying a pool does not wipe the data on the disks. The pool can be discovered.
-       - == (server A) root # zpool destroy tank == :: Does not wipe data
-         == (server B) root # zpool import -D == :: Lists destroyed pools.
-         - Run the import command again specifying the pool name to bring it fully online.
-         - If more than one storage pool is found with the same name then the unique identifier of the storage pool must be used as the argument to import to bring it fully online.
-     - Upgrading Storage Pools
-       - Once a zpool has been upgraded servers running older versions of zpool will not be able to import it.
-       - There is no way to downgrade.
-       - == root # zpool upgrade -v == :: Outputs the version of ZFS pool that the system is currently running. Display a list of supported zpool versions and some descriptions for each.
-       - == root # zpool upgrade -a == :: Upgrades the zpool and enables all supported features. See man page to upgrade to a specific version and feature set.
-       - On shutdown the zfs init script may just unmount the pools and not export them in which case the zpools would not be able to be imported to by another system. If this is the case you will have to explicitly export the zpools first.
+***** RAIDZ
+      - References:
+        - http://en.wikipedia.org/wiki/RAID
+      - Disk Striping
+        - References
+          - http://en.wikipedia.org/wiki/Data_striping
+        - The process of segmenting a body of logically sequential data into data blocks so that consecutive data blocks are spread accross multiple storage devices.
+        - Storage systems vary in the way striping is performed. Data may be stripped at the byte, block or partition level, and may be stripped accross all or some of the disks in a cluster.
+        - Main advantage is higher performance. By spreading data accross multiple devices that can be accessed concurrently, total throughput is increased.
+        - Balances I/O load accross an array of disks.
+      - Standard Parity RAID (i.e. RAID-5)
+        - References:
+          - http://blog.open-e.com/how-does-raid-5-work/
+        - Consists of block level striping with distributed parity. The stripe width is thus statically set at creation.
+        - Minumum of 3 disks. Data is stripped accross two disks. A pairity bit is calculated such that the XOR of all three stripes in the set calculate to zero. The parity bit is then written to the chosen 3rd disk.
+        - No single disk is dedicated to parity. Two disk are chosen to be striped and the third is chosen for parity such that the distribution of parity bits is even accross all drives.
+        - Resilant against a failure of any one disk. The data on the failed disk can be recalculated via the remaining disks and thus restored.
+        - RAID-5 write hole
+          - Caused by inturrupted destaging of writes to disk, such as a power failure.
+          - Solutions to the RAID-5 write hole are either slow (software based) or expensive (hardware based).
+          - RAID-5 has fallen out of favor as a result.
+        - If the data being written to the strip is less than the stripe-size, much time is wasted reading the data on the rest of the stripe to ensure that the parity satisfies the constraint that the XOR of all three stripes in the set calculate to zero.
+          - Thus data is read and written that is not pertinent to the application doing the work.
+          - Expensive NVRAM hardware RAID cards can hide the latency from the end user.
+        - The RAID-5 write hole and the performance impact of writing data smaller than the stripe size to disk motivated the ZFS team to re-think parity-based RAID.
+      - ZFS RAIDZ
+        - Stripe width dynamically allocated.
+          - Every block stransactionally flushed to disk is its own stripe width.
+          - Every RAIDZ write is a full stripe write.
+          - The parity bit is flushed with the stripe simultaneously. This completely eliminates the possability of a write hole.
+            - In the event of a power failure, either the latest data was flushed to disk or it wasn't, but the disks will not be inconsistent.
+          - Cannot calculate parity simply by the rule -- every disk XORs to zero because the stripe size is dynamic with respect to the size of the datablock being written to disk.
+            - ZFS metadata is used to determine the RAIDZ geometry on every read.
+            - Reading file system metadata to contruct the RAID stripe means reading live running data only, not dead inpertinent or unallocated data.
+            - No need for expensive NVRAM to buffer writes or for battery backup to protect against write hole.
+      - Self-healing RAID
+        - ZFS can detect silent errors and fix them on the fly (Not possible if RAID and filesystem are seperate)
+          - When an application requests data ZFS constructs the stripe and compares each block against a default checksum in the metadata. If the read stripe does not match the checksum, ZFS finds the bad block, reads the parity and fixes it through combinatorial reconstruction and returns good data to the application.
+          - If the stripe width is longer than the disks in the array and there is a disk failure there would not be enough data in the parity for combinatorial reconstruction, thus ZFS can mirror data in the stripe to prevent this from happening. :: Bad wording. I re-worded the original to try to make sense of it. Is this what was meant???
+      - RAIDZ-{1,2,3}
+        - RAIDZ-n, where n is the number of parity bits distributed accross all the disks in the array.
+        - Stripe width is variable. Disk Array Size < Stripe width || Disk Array Size == Stripe Width || Stripe Width < Disk Array Size.
+        - RAIDZ-n allows for n disk failures.
+        - RAIDZ-n requires Disk Array Size = n + 2.
+        - RAIDZ-n capacity = Disk Array Size * Capacity of smallest disk - n parity storage
+      - Hybrid RAIDZ
+        - A stripe of multiple RAIDZ VDEVS.
+        - Increase performance at the cost of available disk storage.
+        - Stripe width is variable within each nested RAIDZ VDEV.
+        - Each RAIDZ level follows the same rules outlined in RAIDZ-{1,2,3} above.
+          - A stripe of 3 RAIDZ-n VDEVS can suffer a total of 3*n disks. n per VDEV.
+      - RAIDZ Benchmark :: Recommended to use the tool IOZone 3 to benchmark and stress the array.
+        - Mirrors always outperform RAIDZ levels.
+        - performs(RAIDZ-n) > performs(RAIDZ-{n-1})
+        - More parity bits mean longer read / write times.
+      
+***** ZFS Intent Log (ZIL and SLOG)
+      - References:
+       https://pthree.org/2012/12/06/zfs-administration-part-iii-the-zfs-intent-log/
+      - The Zil and the Seperate Intent Log (SLOG) log what is currently in system memory so that the system may recover in the event of a power loss. This can be setup at anytime so I am going to skip it for now.
+***** The Adjustable Replacement Cache (ARC)
+      - The purpose of this is to cache data for quick retrieval to increase performance. This is a good idea, but can be added later so I am going to skip this for now.
+***** Exporting and Importing Zpools
+      - Exporting Storage Pools
+        - When exporting the following happens:
+          - Causes the kernel to flush all pending data to disk
+          - Writes data to the disk acknowledging that the export was done
+          - Removes all knowledge that the storage pool existed in the system
+        - Exporting the storage pool is necessary before importing the storage pool into a new system. Also, unwritten data may not have been flushed to disk.
+        - == root # zpool export tank ==
+          - Will attempt to unmount all ZFS datasets as well as the pool
+          - If the zpool refuses to export you can add -f to force the export.
+      - Importing Storage Pools
+        - Once the drives have been physically installed they may be imported.
+        - == root # zpool import tank == :: Imports the zpool tank
+        - Once imported it is a good idea to check the status of the zpool
+        - == root # zpool status tank
+          - A status of ONLINE means that everything is healthy
+          - Status FAULTED :: means one or more drives appear faulty to the system
+          - Refer to documentation for troubleshooting status codes
+        - Import multiple zpools by listing them after the import command delimited by white space, or by passing the -a flag for importing all known zpools.
+          - == root # zpool import tank1 tank2 tank3
+          - == root # zpool import -a
+      - Recovering a Destroyed Pool
+        - Destroying a pool does not wipe the data on the disks. The pool can be discovered.
+        - == (server A) root # zpool destroy tank == :: Does not wipe data
+          == (server B) root # zpool import -D == :: Lists destroyed pools.
+          - Run the import command again specifying the pool name to bring it fully online.
+          - If more than one storage pool is found with the same name then the unique identifier of the storage pool must be used as the argument to import to bring it fully online.
+      - Upgrading Storage Pools
+        - Once a zpool has been upgraded servers running older versions of zpool will not be able to import it.
+        - There is no way to downgrade.
+        - == root # zpool upgrade -v == :: Outputs the version of ZFS pool that the system is currently running. Display a list of supported zpool versions and some descriptions for each.
+        - == root # zpool upgrade -a == :: Upgrades the zpool and enables all supported features. See man page to upgrade to a specific version and feature set.
+        - On shutdown the zfs init script may just unmount the pools and not export them in which case the zpools would not be able to be imported to by another system. If this is the case you will have to explicitly export the zpools first.
 
-**** Scrub and Resilver
+***** Scrub and Resilver
      - Standard Validation
        - integrity checking tools require the disks to be offline.
        - The filesystem knows nothing about the underlying data structures such as LVM or RAID.
@@ -616,74 +617,89 @@ errors: No known data errors
          + WRITE- I/O errors occurred while issuing a write request.
          + CHKSUM- Checksum errors. The device returned corrupted data as the result of a read request.
 
-**** Zpool Properties
-     - As with many file systems available for GNU/Linux, ZFS has various flags that can be set to tune the file systems behavior.
-     - Zpool properties can be set to modify the behavior of both the pool and the datasets that the pool contains.
-     - Some properties are read-only.
-     - See man zpool for details on properties.
-     - Get properties
-       - When properties are retrieved the following fields are displayed
-         | name     | Name of storage pool                         |
-         | property | property name                                |
-         | value    | property value                               |
-         | source   | Property source, either 'default' or 'local' |
-       - == root # zpool get -p "all" == :: Retrieves a list of all properties 
-       - == root # zpool get -p PropName1,PropName2 == :: retrieves property details for the specified list of properties delimited by a comma with no white space i.e. PropName1,PropName2
-     - Set properties
-       - Properties that require a string argument do not have an easy way to get the value back to a default value. With other property types, if you try to set the property to an invalid argument then an error will print to the screen displaying available valid values, but it will not indicate which was the default value.
-       - If the source column has "default" then the setting has not been user-defined, if it is "local", then it was user-defined.
-       - == root # zpool set comment="Contact admins@example.com" tank == :: sets the comment property. This will also change the source from "default" to "local"
-       - == root # zpool create -o ashift=12 tank raid1 sda sdb == :: an example of setting properties at zpool creation time.
-     - Properties apply to the whole pool, consequently ZFS datasets inherit property settings from the pool.
-     - Some properties that are set on the dataset also apply to the whole pool
-     - Setting properties only applies to data moving forward and never backward.
-     - Properties are not retroactive i.e. if you replace a drive with a larger drive and then set autoexpand property after it has been installed it will not autoexpand. It will instead appear as a smaller drive.
-     - 
-**** Best Practices & Caveats
-     - The idea is to optimize space efficiency, performance and ensure maximum data integrity
-     - Best Practices
-       - Only run ZFS on 64-bit kernels :: It has 64-bit specific code
-       - Install ZFS only on systems with lots of RAM :: ZFS will use 1/2 of the available RAM for the ARC
-       - Use ECC RAM when possible for scrubbing data in registers and maintaining data consistency :: The ARC is an actual read-only data cache of valuable data in RAM
-       - Use whole disks rather than partitions :: ZFS can make better use of the on-disk cache as a result. If you must use partitions, backup the partition table, and take care when reinstalling data into the other partitions, so you don't corrupt the data in your pool
-       - Keep each VDEV in a storage pool the same size :: If VDEVs vary in size, ZFS will favor the larger VDEV, which could lead to performance bottlenecks.
-       - Use redundancy when possible :: ZFS can and will want to correct data errors that exist in the pool. You cannot fix these errors if you do not have redundant good copy elsewhere in the pool. Mirrors and RAID-Z levels accomplish this.
-       - Consider using RAIDZ-2 or RAIDZ-3 over RAIDZ-1 :: This will increase the probability that you have fully resilvered the necessary data before too many disks failures have occured.
-       - Perform regular (at least weekly) backups of the full storage pool :: It's not a backup, unless you have multiple copies. Just because you have redundant disks, does not ensure live running data in the event of a power failure, hardware failure or disconnected cables.
-       - Use host spares to quickly recover from a damaged device. Set the "autoreplace" property to on for the pool.
-       - Consider using hybrid storage pool with fast SSDs or NVRAM drives :: Using FAST SLOG and L2ARC can greatly improve performance.
-       - If using a hybrid storage pool with multiple devices, mirror the SLOG and stripe the L2ARC.
-       - If using a hybrid storage pool, and partitioning the fast SSD or NVRAM drive, unless you know you will need it, 1GB is likely sufficient for your SLOG :: Use the rest of the SSD or NVRAM drive for the L2ARC. The more storage for the L2ARC, the better.
-       - Keep pool capacity under 80% for best performance :: Due to the copy-on-write nature of ZFS, the filesystem gets hevily fragmented. Email reports of capacity at least monthly.
-       - If possible, scrub consumer-grade SATA and SCISI disks weekly and enterprise-grade SAS and FC disks montly :: If not possible then scrub as frequently as possible.
-       - Set "autoexpand" to on :: so you can expand the storage pool automatically after all disks in the pool have been replaced with larger ones.
-       - Always export your storage pool when moving the disks from one physical system to another.
-       - When considering performance, know that for sequential writes, mirrors will always outperform RAID-Z levels. For sequential reads, RAID-Z levels will perform more slowly than mmirrors on smaller data blocks and faster on larger data blocks. For random reads and writes, mirrors and RAID-Z seem to perform in similar manners. Striped mirrors will outperform mirros and RAID-Z in both sequential, and ramdom reads and writes.
-       - Compression is disabled by default :: this doesn't make much sense with today's hardware. ZFS compression is extremly cheap, extremly fast, and barely adds any latency to the reads and writes. Also your data will consume less space.
-     - Caveats
-       - Your VDEVs determine the IOPS of the storage, and the slowest disk in the VDEV will determine the IOPS for the entire VDEV.
-       - ZFS uses 1/64 of the available raw storage for metadata. so if you purchased a 1 TB drive, the actual raw size is 976 GiB. After ZFS uses it, you will have 961 GiB of available space. The "zfs list" command will show an accurate representation of your available storage. Plan your storage keeping this in mind.
-       - ZFS wants to control the whole block stack. It checksums, resilvers live data instead of full disks, self-heals corrupted blocks, and a number of other unique features. If using a RAID card, make sure to configure it as a true JBOD (or "passthrough mode"), so ZFS can control the disks. If you can't do this with your RAID card, don't use it. Best to use a real HBA.
-       - Do not use other volume management software beneath ZFS. ZFS will perform better, and ensure greater data integrity, if it has control of the whole block device stack. As such, avoid using dm-crypt, mdadm or LVM beneath ZFS.
-       - Do not share a SLOG or L2ARC Device accross pools. Each pool should have its own physical device, not a logical drive, as is the case with some PCI-Express SSD cards. Use the full card for one pool, and a different physical card for another pool. If you share a physical device, you will create race conditions, and could end up with corrupted data.
-       - Do not share a single storage pool accress different servers. ZFS is not a clustered filesystem. Use GlusterFS, Ceph, Lustre or some other clustered filesystem on top of the pool if you wish to have a shared storage backend.
-       - Other than a spare, SLOG and L2ARC in your hybrid pool, do not mix VDEVs in a single pool. If one VDEV is a mirror, all VDEVs should be mirrors. If one VDEV is a RAIDZ-1, all VDEVs should be RAIDZ-1. Unless of course, you know what you are doing, and are willing to accpet the consequences. ZFS attempts to balance the data across VDEVs. Having a VDEV of a different redundancy can lead to performance issues and space efficiency concerns and make it very difficult to recover in the event of a failure.
-       - Do not mix disk sizes or speeds in a single VDEV. Do mix fabrication dates, however, to prevent mass drive failure.
-       - Do not mix disk sizes or speeds in your storage pool at all.
-       - Do not mix disk counts accross VDEVs. If one VDEV uses 4 drives, all VDEVs should use 4 drives.
-       - Do not put all of the drives from a single controller in one VDEV. Plan your storage, such that if a controller fails, it affects only the number of disks necessary to keep the data online.
-       - When using advanced format disks, you must set the ashift value to 12 at pool creation. It cannot be changed after the fact. Use "zpool create -o ashift=12 tank mirror sda sdb" as an example
-       - Hot spare disks will not be added to the VDEV to replace a failed drive by default. You MUST enable this feature. set the autoreplace feature to on. Use 'zpool set autoreplace=on tank' as an example.
-       - The storage pool will not auto resize itself when all smaller drives in the pool have been replaced by larger ones. You must enable this feature, and you must enable it before replacing the first disk. Use "zpool set autoexpand=on tank' as an example.
-       - ZFS does not restripe data in a VDEV nor across multiple VDEVs. Typically, when adding a new device to a RAID array, the RAID controller will rebuild the data, by creating a new stripe width. This will free up some space on the drives in the pool, as it copies data to the new disk. ZFS has no such mechanism. Eventually, over time, the disks will balance out due to the writes, but even a scrub will not rebuild the stripe width.
-       - You cannot shrink a zpool, only grow it. This means you cannot remove VDEVs from a storage pool.
-       - You can only remove drives from mirrored VDEV using the "zpool detach' command. You can replace drives with another drive in RAIDZ and mirror VDEVs however.
-       - Do not create a storage pool of files or ZVOLs from an existing zpool. Race conditions will be present, and you will end up with corrupted data. Always keep multiple pools sperate.
-       - The Linux kernel may not assign a drive the same drive letter at every  boot. Thus, you should use the /dev/disk/by-id/ convention for your SLOG and L2ARC. If you don't, your zpool devices could end up as a SLOG device, which would in turn clobber your ZFS data.
-       - Don't create massive storage pools "just because you can". Even though ZFS can create 78-bit storage pool sizes, that doesn't mean you need to create one.
-       - Don't put production directly into the zpool. Use ZFS datasets instead.
-       - Don't commit production data to file VDEVs. Only use file VDEVs for testing scripts or learning the ins and outs of ZFS.
-         
+***** Zpool Properties
+      - As with many file systems available for GNU/Linux, ZFS has various flags that can be set to tune the file systems behavior.
+      - Zpool properties can be set to modify the behavior of both the pool and the datasets that the pool contains.
+      - Some properties are read-only.
+      - See man zpool for details on properties.
+      - Get properties
+        - When properties are retrieved the following fields are displayed
+          | name     | Name of storage pool                         |
+          | property | property name                                |
+          | value    | property value                               |
+          | source   | Property source, either 'default' or 'local' |
+        - == root # zpool get -p "all" == :: Retrieves a list of all properties 
+        - == root # zpool get -p PropName1,PropName2 == :: retrieves property details for the specified list of properties delimited by a comma with no white space i.e. PropName1,PropName2
+      - Set properties
+        - Properties that require a string argument do not have an easy way to get the value back to a default value. With other property types, if you try to set the property to an invalid argument then an error will print to the screen displaying available valid values, but it will not indicate which was the default value.
+        - If the source column has "default" then the setting has not been user-defined, if it is "local", then it was user-defined.
+        - == root # zpool set comment="Contact admins@example.com" tank == :: sets the comment property. This will also change the source from "default" to "local"
+        - == root # zpool create -o ashift=12 tank raid1 sda sdb == :: an example of setting properties at zpool creation time.
+      - Properties apply to the whole pool, consequently ZFS datasets inherit property settings from the pool.
+      - Some properties that are set on the dataset also apply to the whole pool
+      - Setting properties only applies to data moving forward and never backward.
+      - Properties are not retroactive i.e. if you replace a drive with a larger drive and then set autoexpand property after it has been installed it will not autoexpand. It will instead appear as a smaller drive.
+      - 
+***** Best Practices & Caveats
+      - The idea is to optimize space efficiency, performance and ensure maximum data integrity
+      - Best Practices
+        - Only run ZFS on 64-bit kernels :: It has 64-bit specific code
+        - Install ZFS only on systems with lots of RAM :: ZFS will use 1/2 of the available RAM for the ARC
+        - Use ECC RAM when possible for scrubbing data in registers and maintaining data consistency :: The ARC is an actual read-only data cache of valuable data in RAM
+        - Use whole disks rather than partitions :: ZFS can make better use of the on-disk cache as a result. If you must use partitions, backup the partition table, and take care when reinstalling data into the other partitions, so you don't corrupt the data in your pool
+        - Keep each VDEV in a storage pool the same size :: If VDEVs vary in size, ZFS will favor the larger VDEV, which could lead to performance bottlenecks.
+        - Use redundancy when possible :: ZFS can and will want to correct data errors that exist in the pool. You cannot fix these errors if you do not have redundant good copy elsewhere in the pool. Mirrors and RAID-Z levels accomplish this.
+        - Consider using RAIDZ-2 or RAIDZ-3 over RAIDZ-1 :: This will increase the probability that you have fully resilvered the necessary data before too many disks failures have occured.
+        - Perform regular (at least weekly) backups of the full storage pool :: It's not a backup, unless you have multiple copies. Just because you have redundant disks, does not ensure live running data in the event of a power failure, hardware failure or disconnected cables.
+        - Use host spares to quickly recover from a damaged device. Set the "autoreplace" property to on for the pool.
+        - Consider using hybrid storage pool with fast SSDs or NVRAM drives :: Using FAST SLOG and L2ARC can greatly improve performance.
+        - If using a hybrid storage pool with multiple devices, mirror the SLOG and stripe the L2ARC.
+        - If using a hybrid storage pool, and partitioning the fast SSD or NVRAM drive, unless you know you will need it, 1GB is likely sufficient for your SLOG :: Use the rest of the SSD or NVRAM drive for the L2ARC. The more storage for the L2ARC, the better.
+        - Keep pool capacity under 80% for best performance :: Due to the copy-on-write nature of ZFS, the filesystem gets hevily fragmented. Email reports of capacity at least monthly.
+        - If possible, scrub consumer-grade SATA and SCISI disks weekly and enterprise-grade SAS and FC disks montly :: If not possible then scrub as frequently as possible.
+        - Set "autoexpand" to on :: so you can expand the storage pool automatically after all disks in the pool have been replaced with larger ones.
+        - Always export your storage pool when moving the disks from one physical system to another.
+        - When considering performance, know that for sequential writes, mirrors will always outperform RAID-Z levels. For sequential reads, RAID-Z levels will perform more slowly than mmirrors on smaller data blocks and faster on larger data blocks. For random reads and writes, mirrors and RAID-Z seem to perform in similar manners. Striped mirrors will outperform mirros and RAID-Z in both sequential, and ramdom reads and writes.
+        - Compression is disabled by default :: this doesn't make much sense with today's hardware. ZFS compression is extremly cheap, extremly fast, and barely adds any latency to the reads and writes. Also your data will consume less space.
+      - Caveats
+        - Your VDEVs determine the IOPS of the storage, and the slowest disk in the VDEV will determine the IOPS for the entire VDEV.
+        - ZFS uses 1/64 of the available raw storage for metadata. so if you purchased a 1 TB drive, the actual raw size is 976 GiB. After ZFS uses it, you will have 961 GiB of available space. The "zfs list" command will show an accurate representation of your available storage. Plan your storage keeping this in mind.
+        - ZFS wants to control the whole block stack. It checksums, resilvers live data instead of full disks, self-heals corrupted blocks, and a number of other unique features. If using a RAID card, make sure to configure it as a true JBOD (or "passthrough mode"), so ZFS can control the disks. If you can't do this with your RAID card, don't use it. Best to use a real HBA.
+        - Do not use other volume management software beneath ZFS. ZFS will perform better, and ensure greater data integrity, if it has control of the whole block device stack. As such, avoid using dm-crypt, mdadm or LVM beneath ZFS.
+        - Do not share a SLOG or L2ARC Device accross pools. Each pool should have its own physical device, not a logical drive, as is the case with some PCI-Express SSD cards. Use the full card for one pool, and a different physical card for another pool. If you share a physical device, you will create race conditions, and could end up with corrupted data.
+        - Do not share a single storage pool accress different servers. ZFS is not a clustered filesystem. Use GlusterFS, Ceph, Lustre or some other clustered filesystem on top of the pool if you wish to have a shared storage backend.
+        - Other than a spare, SLOG and L2ARC in your hybrid pool, do not mix VDEVs in a single pool. If one VDEV is a mirror, all VDEVs should be mirrors. If one VDEV is a RAIDZ-1, all VDEVs should be RAIDZ-1. Unless of course, you know what you are doing, and are willing to accpet the consequences. ZFS attempts to balance the data across VDEVs. Having a VDEV of a different redundancy can lead to performance issues and space efficiency concerns and make it very difficult to recover in the event of a failure.
+        - Do not mix disk sizes or speeds in a single VDEV. Do mix fabrication dates, however, to prevent mass drive failure.
+        - Do not mix disk sizes or speeds in your storage pool at all.
+        - Do not mix disk counts accross VDEVs. If one VDEV uses 4 drives, all VDEVs should use 4 drives.
+        - Do not put all of the drives from a single controller in one VDEV. Plan your storage, such that if a controller fails, it affects only the number of disks necessary to keep the data online.
+        - When using advanced format disks, you must set the ashift value to 12 at pool creation. It cannot be changed after the fact. Use "zpool create -o ashift=12 tank mirror sda sdb" as an example
+        - Hot spare disks will not be added to the VDEV to replace a failed drive by default. You MUST enable this feature. set the autoreplace feature to on. Use 'zpool set autoreplace=on tank' as an example.
+        - The storage pool will not auto resize itself when all smaller drives in the pool have been replaced by larger ones. You must enable this feature, and you must enable it before replacing the first disk. Use "zpool set autoexpand=on tank' as an example.
+        - ZFS does not restripe data in a VDEV nor across multiple VDEVs. Typically, when adding a new device to a RAID array, the RAID controller will rebuild the data, by creating a new stripe width. This will free up some space on the drives in the pool, as it copies data to the new disk. ZFS has no such mechanism. Eventually, over time, the disks will balance out due to the writes, but even a scrub will not rebuild the stripe width.
+        - You cannot shrink a zpool, only grow it. This means you cannot remove VDEVs from a storage pool.
+        - You can only remove drives from mirrored VDEV using the "zpool detach' command. You can replace drives with another drive in RAIDZ and mirror VDEVs however.
+        - Do not create a storage pool of files or ZVOLs from an existing zpool. Race conditions will be present, and you will end up with corrupted data. Always keep multiple pools sperate.
+        - The Linux kernel may not assign a drive the same drive letter at every  boot. Thus, you should use the /dev/disk/by-id/ convention for your SLOG and L2ARC. If you don't, your zpool devices could end up as a SLOG device, which would in turn clobber your ZFS data.
+        - Don't create massive storage pools "just because you can". Even though ZFS can create 78-bit storage pool sizes, that doesn't mean you need to create one.
+        - Don't put production directly into the zpool. Use ZFS datasets instead.
+        - Don't commit production data to file VDEVs. Only use file VDEVs for testing scripts or learning the ins and outs of ZFS.
+          
+**** ZFS Administration
+***** Merkle Trees
+      - Cryptographic hash trees invented by Ralph Merkle
+      - Each datablock is hashed with SHA-256 algorithm.
+      - Used by ZFS to verify integrity of entire file system.
+      - The purpose of cryptographically hasing each block is to ensure data integrity. We can check to see if the hash block matches its parent hash block. If it does, then the data was not corrupt, otherwise the block is corrupt.
+      - The tree is binary (but Merkle trees do not need to be binary)
+      - Each parent node is the SHA-256-bit hash of concatonating its children hash blocks together.
+      - The root of the tree (also called super block, super node or uber block) is a SHA-256 bit hash of its concatenated children.
+      - The uber block is used to verify the integrity of the entire Merkle tree.
+      - If a data block changes, all of the parent hash blocks change all of the way up to and including the uber block.
+      - When a storage pool is scrubbed ZFS verifies every SHA-256 hash in the Merkle tree to make sure there is no corrupted data, or inconsistencies.
+      - If the pool has redundancy and a corrupted data block is found, ZFS will look elsewhere in the pool for a good datablock at the same location to fix the corrupted one and then reverify the SHA-256 hash in the Merkle tree.
+***** Copy-on-write (COW)
+      - 
 * TODO
   - [0/0] Install Cron
   - [0/2] Things to Schedual with Cron
