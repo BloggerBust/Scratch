@@ -639,6 +639,55 @@ errors: No known data errors
      - Setting properties only applies to data moving forward and never backward.
      - Properties are not retroactive i.e. if you replace a drive with a larger drive and then set autoexpand property after it has been installed it will not autoexpand. It will instead appear as a smaller drive.
      - 
+**** Best Practices & Caveats
+     - The idea is to optimize space efficiency, performance and ensure maximum data integrity
+     - Best Practices
+       - Only run ZFS on 64-bit kernels :: It has 64-bit specific code
+       - Install ZFS only on systems with lots of RAM :: ZFS will use 1/2 of the available RAM for the ARC
+       - Use ECC RAM when possible for scrubbing data in registers and maintaining data consistency :: The ARC is an actual read-only data cache of valuable data in RAM
+       - Use whole disks rather than partitions :: ZFS can make better use of the on-disk cache as a result. If you must use partitions, backup the partition table, and take care when reinstalling data into the other partitions, so you don't corrupt the data in your pool
+       - Keep each VDEV in a storage pool the same size :: If VDEVs vary in size, ZFS will favor the larger VDEV, which could lead to performance bottlenecks.
+       - Use redundancy when possible :: ZFS can and will want to correct data errors that exist in the pool. You cannot fix these errors if you do not have redundant good copy elsewhere in the pool. Mirrors and RAID-Z levels accomplish this.
+       - Consider using RAIDZ-2 or RAIDZ-3 over RAIDZ-1 :: This will increase the probability that you have fully resilvered the necessary data before too many disks failures have occured.
+       - Perform regular (at least weekly) backups of the full storage pool :: It's not a backup, unless you have multiple copies. Just because you have redundant disks, does not ensure live running data in the event of a power failure, hardware failure or disconnected cables.
+       - Use host spares to quickly recover from a damaged device. Set the "autoreplace" property to on for the pool.
+       - Consider using hybrid storage pool with fast SSDs or NVRAM drives :: Using FAST SLOG and L2ARC can greatly improve performance.
+       - If using a hybrid storage pool with multiple devices, mirror the SLOG and stripe the L2ARC.
+       - If using a hybrid storage pool, and partitioning the fast SSD or NVRAM drive, unless you know you will need it, 1GB is likely sufficient for your SLOG :: Use the rest of the SSD or NVRAM drive for the L2ARC. The more storage for the L2ARC, the better.
+       - Keep pool capacity under 80% for best performance :: Due to the copy-on-write nature of ZFS, the filesystem gets hevily fragmented. Email reports of capacity at least monthly.
+       - If possible, scrub consumer-grade SATA and SCISI disks weekly and enterprise-grade SAS and FC disks montly :: If not possible then scrub as frequently as possible.
+       - Set "autoexpand" to on :: so you can expand the storage pool automatically after all disks in the pool have been replaced with larger ones.
+       - Always export your storage pool when moving the disks from one physical system to another.
+       - When considering performance, know that for sequential writes, mirrors will always outperform RAID-Z levels. For sequential reads, RAID-Z levels will perform more slowly than mmirrors on smaller data blocks and faster on larger data blocks. For random reads and writes, mirrors and RAID-Z seem to perform in similar manners. Striped mirrors will outperform mirros and RAID-Z in both sequential, and ramdom reads and writes.
+       - Compression is disabled by default :: this doesn't make much sense with today's hardware. ZFS compression is extremly cheap, extremly fast, and barely adds any latency to the reads and writes. Also your data will consume less space.
+     - Caveats
+       - Your VDEVs determine the IOPS of the storage, and the slowest disk in the VDEV will determine the IOPS for the entire VDEV.
+       - ZFS uses 1/64 of the available raw storage for metadata. so if you purchased a 1 TB drive, the actual raw size is 976 GiB. After ZFS uses it, you will have 961 GiB of available space. The "zfs list" command will show an accurate representation of your available storage. Plan your storage keeping this in mind.
+       - ZFS wants to control the whole block stack. It checksums, resilvers live data instead of full disks, self-heals corrupted blocks, and a number of other unique features. If using a RAID card, make sure to configure it as a true JBOD (or "passthrough mode"), so ZFS can control the disks. If you can't do this with your RAID card, don't use it. Best to use a real HBA.
+       - Do not use other volume management software beneath ZFS. ZFS will perform better, and ensure greater data integrity, if it has control of the whole block device stack. As such, avoid using dm-crypt, mdadm or LVM beneath ZFS.
+       - Do not share a SLOG or L2ARC Device accross pools. Each pool should have its own physical device, not a logical drive, as is the case with some PCI-Express SSD cards. Use the full card for one pool, and a different physical card for another pool. If you share a physical device, you will create race conditions, and could end up with corrupted data.
+       - Do not share a single storage pool accress different servers. ZFS is not a clustered filesystem. Use GlusterFS, Ceph, Lustre or some other clustered filesystem on top of the pool if you wish to have a shared storage backend.
+       - Other than a spare, SLOG and L2ARC in your hybrid pool, do not mix VDEVs in a single pool. If one VDEV is a mirror, all VDEVs should be mirrors. If one VDEV is a RAIDZ-1, all VDEVs should be RAIDZ-1. Unless of course, you know what you are doing, and are willing to accpet the consequences. ZFS attempts to balance the data across VDEVs. Having a VDEV of a different redundancy can lead to performance issues and space efficiency concerns and make it very difficult to recover in the event of a failure.
+       - Do not mix disk sizes or speeds in a single VDEV. Do mix fabrication dates, however, to prevent mass drive failure.
+       - Do not mix disk sizes or speeds in your storage pool at all.
+       - Do not mix disk counts accross VDEVs. If one VDEV uses 4 drives, all VDEVs should use 4 drives.
+       - Do not put all of the drives from a single controller in one VDEV. Plan your storage, such that if a controller fails, it affects only the number of disks necessary to keep the data online.
+       - When using advanced format disks, you must set the ashift value to 12 at pool creation. It cannot be changed after the fact. Use "zpool create -o ashift=12 tank mirror sda sdb" as an example
+       - Hot spare disks will not be added to the VDEV to replace a failed drive by default. You MUST enable this feature. set the autoreplace feature to on. Use 'zpool set autoreplace=on tank' as an example.
+       - The storage pool will not auto resize itself when all smaller drives in the pool have been replaced by larger ones. You must enable this feature, and you must enable it before replacing the first disk. Use "zpool set autoexpand=on tank' as an example.
+       - ZFS does not restripe data in a VDEV nor across multiple VDEVs. Typically, when adding a new device to a RAID array, the RAID controller will rebuild the data, by creating a new stripe width. This will free up some space on the drives in the pool, as it copies data to the new disk. ZFS has no such mechanism. Eventually, over time, the disks will balance out due to the writes, but even a scrub will not rebuild the stripe width.
+       - You cannot shrink a zpool, only grow it. This means you cannot remove VDEVs from a storage pool.
+       - You can only remove drives from mirrored VDEV using the "zpool detach' command. You can replace drives with another drive in RAIDZ and mirror VDEVs however.
+       - Do not create a storage pool of files or ZVOLs from an existing zpool. Race conditions will be present, and you will end up with corrupted data. Always keep multiple pools sperate.
+       - The Linux kernel may not assign a drive the same drive letter at every  boot. Thus, you should use the /dev/disk/by-id/ convention for your SLOG and L2ARC. If you don't, your zpool devices could end up as a SLOG device, which would in turn clobber your ZFS data.
+       - Don't create massive storage pools "just because you can". Even though ZFS can create 78-bit storage pool sizes, that doesn't mean you need to create one.
+       - Don't put production directly into the zpool. Use ZFS datasets instead.
+       - Don't commit production data to file VDEVs. Only use file VDEVs for testing scripts or learning the ins and outs of ZFS.
+         
 * TODO
-  - Install Cron
-  - Schedual Zpool scrub
+  - [0/0] Install Cron
+  - [0/2] Things to Schedual with Cron
+    - [ ] Schedual Zpool scrub
+    - [ ] Email reports of storage pool capacity monthly
+  - [ ] Make a snapshot
+  - [ ] Enable compression
