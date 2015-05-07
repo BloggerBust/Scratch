@@ -719,7 +719,8 @@ errors: No known data errors
         - ZFS delays syncing data to disk every 5 seconds. All data remaining is flushed to disk every 30 seconds. That means a lot of data flushes to disk at once into the SLAB keeping data-blocks close and therefore increasing the chance that related data is kept together in the same SLAB. Thus reducing fragmentation.
       - COW is also used by VM images such as Qemu and many other file systems.
 ***** Creating File Systems
-      - 
+      - ZFS datasets are file systems
+      - Storage pools are not meant to store data directly. Instead, multiple ZFS datasets sharing the same storage pool store the data.
 * TODO
   - [0/0] Install Cron
   - [0/2] Things to Schedual with Cron
