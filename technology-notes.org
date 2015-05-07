@@ -699,6 +699,26 @@ errors: No known data errors
       - When a storage pool is scrubbed ZFS verifies every SHA-256 hash in the Merkle tree to make sure there is no corrupted data, or inconsistencies.
       - If the pool has redundancy and a corrupted data block is found, ZFS will look elsewhere in the pool for a good datablock at the same location to fix the corrupted one and then reverify the SHA-256 hash in the Merkle tree.
 ***** Copy-on-write (COW)
+      - A data storage technique:
+        1. The data-block targeted for modification is copied
+        2. The copy is modified
+        3. The file system pointers are updated to point to the new data-block location
+        4. The original data-block is released for use by the applicaiton
+      - A consequence is that the underlying data becomes severly fragmented.
+      - COW Fascilitates taking snapshots
+        - This is such a huge bennefit that it outways the consequence of fragmentation
+        - As the file system is being written to COW makes its way through to the end of the disk. The original copy of each data-block ramains for a long time following a write.
+        - A snapshot is treated as a first class filesystem.
+        - If a data-block is overriden following a snapshot, then its copy will be placed in the snapshot filesystem; otherwise, it remains where it is marked as free for use by the applicaiton.
+        - This is possible because a snapshot is a copy of the hash tree at that exact moment. Thus, unless the snapshotted data-blocks are overritten, they take up hardly any space.
+      - When a data-block is updated, the hash tree is also updated starting with the child-block hash and moving up the tree through all of its ancestor node hashes until the super-node hash is finally updated.
+      - Fragmentation can have a serious performance impact. To help mitigate fragmentation ZFS marks slabs of disk space for data-block copies so that they stay close to one another.
+        - Typically file systems write ata in 4 KiB blocks where as ZFS writes data in 128 KiB blocks.
+        - This minimizes fragmentation by an order of 32.
+        - The SLAB allocator will allocate a SLAB and then partition that into 128 KiB blocks.
+        - ZFS delays syncing data to disk every 5 seconds. All data remaining is flushed to disk every 30 seconds. That means a lot of data flushes to disk at once into the SLAB keeping data-blocks close and therefore increasing the chance that related data is kept together in the same SLAB. Thus reducing fragmentation.
+      - COW is also used by VM images such as Qemu and many other file systems.
+***** Creating File Systems
       - 
 * TODO
   - [0/0] Install Cron
