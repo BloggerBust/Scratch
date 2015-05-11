@@ -721,6 +721,27 @@ errors: No known data errors
 ***** Creating File Systems
       - ZFS datasets are file systems
       - Storage pools are not meant to store data directly. Instead, multiple ZFS datasets sharing the same storage pool store the data.
+      - By default each dataset has full access to the entire storage pool.
+      - As files are placed in the dataset, then the pool marks that storage as unavailable to all datasets. Therefore, there is no need to create logical volumes of limited size.
+      - Datasets can have quotas that limit there size.
+      - The big advantage is that there is no need to worry about preallocated block devices because ZFS manages the entire stack and  therefore understands how much data has been occupied and how much is available.
+      - Create a dataset
+        - == root # zfs create pool-name/dataset-name == :: Creates a data-set named data-set in the pool named pool-namen
+      - Mounting DataSets
+        - Datasets are not exportable block devices by default so there is nothing to directly mount; hence, there is nothing in /etc/fstab for persistence accross reboots.
+        - Instead, the storage pool can be imported and zfs mount can be run for each dataset.
+        - == root # zfs mount /<pool-name>/<dataset-name> == :: <dataset-name has bee mounted to the pool named <pool-name>
+        - == root # zfs unmount /<pool-name>/<dataset-name> == :: <dataset-name has been umounted from <pool-name>
+        - == root # zfs set mountpoint=/mnt/<data-setname> <pool-name>/<data-setname> == :: Sets the data-set mountpoint property
+      - Nested Datasets
+        - Nested datasets makes it possible to change properties to one dataset without affecting the other. i.e. setting compression on /var/log, but not on the parent data-set /var. 
+        - == root # zfs create /<pool-name>/<data-setname>/log == :: creates a nested dataset named "log"
+      - Destroy a dataset
+        - Frees up the blocks used by the dataset.
+        - Cannot be reverted without a previous snapshot.
+        - == root # zfs destroy /<pool-name>/<data-setname> ==
+      - Rename a dataset
+        - == root # zfs rename /<pool-name>/<data-setname1> /<pool-name>/<data-setname2> ==
 * TODO
   - [0/0] Install Cron
   - [0/2] Things to Schedual with Cron
