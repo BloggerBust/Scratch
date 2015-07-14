@@ -303,6 +303,8 @@
     - projectile-grep failing
     - projectile-ag fails because ag is not available
     - omnisharp-find-usages seems to only find usages in the current file, rather than anywhere in the solution.
+  - General
+    - C-x C-f does not work for creating a file now because it prefers to find files of the same name. I think this is due to ido-search. This is really painful.
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
