@@ -684,6 +684,9 @@ errors: No known data errors
        - Don't put production directly into the zpool. Use ZFS datasets instead.
        - Don't commit production data to file VDEVs. Only use file VDEVs for testing scripts or learning the ins and outs of ZFS.
          
+** xfreerdp
+  - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
+  -  xfreerdp /v:2ua4041FTF.lan.local /u:trevor.wilson@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:trevor.wilson /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
 * TODO
   - [0/0] Install Cron
   - [0/2] Things to Schedual with Cron

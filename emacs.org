@@ -303,6 +303,7 @@
     - projectile-grep failing
     - projectile-ag fails because ag is not available
     - omnisharp-find-usages seems to only find usages in the current file, rather than anywhere in the solution.
+  - No easy way to convert a common string format to a date format that is understood by emacs/org-mode
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
