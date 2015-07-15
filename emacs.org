@@ -208,7 +208,7 @@
     - [1/2] :: a checkbox. Make it count how many children are completed by adding a forward slash inside and remove any whitespace followed by C-c C-c
       - [X] :: a sub-item. Mark it as completed with C-c C-c
       - [ ] :: another sub-item
-* electric-indent-mode
+** electric-indent-mode
   - (electric-indent-mode t) :: activates auto-indenting.
 ** projectile-mode
    - It is a minor mode to assist project management and navigation. See help documentation for key bindings.
@@ -217,7 +217,7 @@
 ** helm-projectile-mode
    - helps to search for files within a project.
    - If invoked outside of a project it can display a list of known projects to jump to. In contracst, if projectile is used to try to switch to a project without first being in a project it will fail and complain that it is not in a project.
-   - C-p d :: opens the root of the project in dired mode.
+   - C-d p d :: opens the root of the project in dired mode.
 ** helm-mode
    - https://github.com/emacs-helm/helm/wiki :: wiki
    - provides auto-completion for M-x     
@@ -303,7 +303,9 @@
     - projectile-grep failing
     - projectile-ag fails because ag is not available
     - omnisharp-find-usages seems to only find usages in the current file, rather than anywhere in the solution.
-  - No easy way to convert a common string format to a date format that is understood by emacs/org-mode
+  - General
+    - No easy way to convert a common string format to a date format that is understood by emacs/org-mode
+    - C-x C-f does not work for creating a file now because it prefers to find files of the same name. I think this is due to ido-search. This is really painful.
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
