@@ -809,6 +809,50 @@ errors: No known data errors
         - == root # zfs destroy /<pool-name>/<data-setname> ==
       - Rename a dataset
         - == root # zfs rename /<pool-name>/<data-setname1> /<pool-name>/<data-setname2> ==
+***** Compression and Duplication
+      - Compression
+        - is transparent. Zfs handles compression/decompression on the fly.
+        - is enabled / disabled per dataset. The default is disabled.
+        - Supported algorithms
+          - LZJB
+            - Default
+            - A Lempel-Ziv algorithm written by author of ZFS Jeff Bonwick
+            - Designed to be fast with tight compression ratios.
+          - LZ4
+            - New to ZFS. Offers tighter compression ratios than LZJB.
+            - Is now preferred over LZJB.
+          - ZLE
+            - Super fast with very light compression ratios
+          - Gzip{1-9}
+            - Where 1 is as fast as possible and 9 is as compressed as possible.
+            - The default is 6. This is the default for gnu linux.
+        - Not retroactive. Applys only to newly commited or modified data.
+        - There is next to know performance impact for enabling it so it is recommended to enable compression on all datasets.
+        - Commands:
+          - zfs set compression=lz4 tank/log :: To set compression to lz4 for dataset /tank/log
+      - Duplication
+        - Anotherway to save disk space in conjunction with compression
+          - 3 types
+            1. file
+               - most performant and least costly on system resources.
+               - each file is hashed with crypto hash agorithm. Files with matching hashes are only stored once in disk and metadata is used to lookup those files
+               - saves significant disk space.
+               - Drawback: if a single byte changes the entire modified file must be written to disk since it will no longer share the same hash as any other file in the file system (unless it does of course :-). For a large file that could have a serious performance impact.
+            2. block
+               - zfs uses this only
+               - block duplication shares all the same blocks in a file, minus blocks that are different. Only unique blocks are written to disk and shared blocks can be referenced in RAM.
+               - More efficient than byte duplication and more flexible than file duplication.
+               - Drawback: Requires lots of RAM to keep track of shared blocks
+               - Since file systems read and write data in block segments this option makes the most sense for modern filesystems.
+            3. byte
+               - most expensive because anchor points must be kept to determine the regions where duplicate and unique bytes start and end.
+               - Works well for storage where file may be stored multiple times, but not necessarily under the same blocks. i.e. mail attachments.
+        - Shared blocks are stored in a duplication table in RAM. The more shared blocks that exist on disk, the larger the duplication table becomes. If the system runs out of RAM then swap is used (performance hit).
+        - It is turned off by default.
+        - zfs get -p dedup :: shows if duplication is on/off on each filesystem, volume, snapshot
+        - Because duplication requires a large amount of RAM as the size of the file system grows we will not consider it further.
+***** Snapshots
+      
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:2ua4041FTF.lan.local /u:trevor.wilson@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:trevor.wilson /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect

@@ -18,8 +18,10 @@
             
 * Getting Help In Emacs
 - C-h k :: Brings up the help document for whatever command is entered
+  - Note that if the command begins with the prefix key C-u, then you will have to drop the prefix when looking up the key binding.
 - C-h f :: Describe function. If the point is on text that matches the name of a function, then that will become the default function to describe. Otherwise, a function name to describe may be entered.
 - C-h C-f :: Emacs FAQ
+- To resolve context specific options for a particular command Enter the start of the command followed by F1 for a list of all possible completions.
 
 * Key-bindings
 - C-g :: Cancel whatever command was pending
@@ -221,6 +223,8 @@
 ** helm-mode
    - https://github.com/emacs-helm/helm/wiki :: wiki
    - provides auto-completion for M-x     
+** helm-descbinds, then when you
+   press F1 or C-h there (in the middle of a command) and it lists the bindings and their commands you can choose one and actually run it instead of having to retype the keysequence.
 * custom-configuration
 - ~/.emacs.d/init.el :: emacs initialization file
 - M-x package-list-packages :: Fetches the latest package meta-data.
@@ -306,6 +310,8 @@
   - General
     - No easy way to convert a common string format to a date format that is understood by emacs/org-mode
     - C-x C-f does not work for creating a file now because it prefers to find files of the same name. I think this is due to ido-search. This is really painful.
+    - How to cp the file associated with the current buffer to a new path?
+    - How to mv the file associated with the current buffer to a new path?
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
