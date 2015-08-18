@@ -852,7 +852,77 @@ errors: No known data errors
         - zfs get -p dedup :: shows if duplication is on/off on each filesystem, volume, snapshot
         - Because duplication requires a large amount of RAM as the size of the file system grows we will not consider it further.
 ***** Snapshots
-      
+      - First class read-only file system. It is a mirrored copy of the state of the file system at the time the snapshot was taken.
+      - Can keep 2^64 snapshots in a pool.
+      - Don't require additional backing store. They use the same storage pool as the rest of the data.
+      - A snapshot is a readonly copy of the Merkle tree. Even the snapshots properties are readonly.
+      - Snapshot creation is very fast.
+      - As the current state diverges from the snapshot, the snapshot will begin to store the data of the things that change. So more the current state diverges from the snapshot the more space the snapshot consumes.
+      - Creating Snapshots
+        - Two types:
+          - pool snapshots
+            - pool@snapshot-name :: snapshot name syntax
+            - == zfs snapshot tank@tuesday == :: takes a snapshot of the tank pool named tuesday
+          - dataset snapshots
+            - pool/dataset@snapshot-name :: snapshot name syntax
+            - == zfs snapshot tank/test@tuesday == :: Takes a snapshot of the tank/test dataset named tuesday
+      - Listing Snapshots
+        - snapshots are stored in a hidden directory named .zfs. It is hidden even from ls -a command, but you can still cd to .zfs even though you cannot list it with ls -a.
+        - The .zfs directory can be made visible by changing the snapdir property on the dataset.
+          - == zfs set snapdir=visible tank test == makes the .zfs directory visible to the ls -a command. Valid values are hidden and visible.
+        - == zfs list -t snapshot == :: will list the snapshots even if the snapdir is set to hidden.
+        - == zfs list -r -t snapshot tank == :: this will list only snapshots under tank recursivly.
+      - Destroying Snapshots
+        - == zfs destroy tank/test@tuesday == :: Similar to destroying a storage pool or a dataset.
+        - A snapshot of a dataset is a child file system of a dataset, therefore the dataset cannot be destroyed until all the snapshots (and nested datasets) of the dataset have been destroyed.
+      - Renaming Snapshots
+        - Must be renamed in the storage pool and ZFS dataset from which they were created.
+        - == zfs rename tank/test@tuesday tank/test@tuesday-19:15 ==
+      - Rolling Back to a Snapshot
+        - Discards changes between the snapshot and the current state.
+        - Can only roll back to most recent snapshot.
+        - To roll back to a snapshot earlier than the most recent snapshot you must destroy all snapshots inbetween :: Yuck!
+          #+BEGIN_SRC shell
+          # zfs rollback tank/test@tuesday
+          cannot rollback to 'tank/test@tuesday': more recent snapshots exist
+          use '-r' to force deletion of the following snapshots:
+          tank/test@wednesday
+          tank/test@thursday
+          #+END_SRC
+        - The file system must be unmounted before the rollback can commence. :: This means downtime!
+***** Clones
+      - A writeable filesystem that was "upgraded" from a snapshot; hence, only snapshots can be cloned.
+      - The clone depends on the snapshot to exist since it is a copy of the Merkle tree of the snapshot.
+        - All clones must be destroyed before the snapshot that those clones depend on can be destroyed.
+      - Clones do not take up additional space from their snapshot until they start to diverge at which point they only store the changes.
+      - Creating a Clone
+        - the clone does not need to reside in the same dataset as the snapshot, but it does need to reside in the same storage pool.
+        - To clone tank/test@tuesday snapshot and name it tank/tuesday:
+          #+BEGIN_SRC shell
+          # zfs clone tank/test@tuesday tank/tuesday
+          # dd if=/dev/zero of=/tank/tuesday/random.img bs=1M count=100
+          # zfs list -r tank
+          NAME           USED  AVAIL  REFER  MOUNTPOINT
+          tank           161M  2.78G  44.9K  /tank
+          tank/test     37.1M  2.78G  37.1M  /tank/test
+          tank/tuesday   124M  2.78G   161M  /tank/tuesday
+          #+END_SRC
+      - Destroying a Clone
+        - Cannot destroy a snapshot until all dependant clones have been destroyed.
+        - == zfs destroy tank/tuesday == :: destroys the clone named tuesday in the storage pool tank. Just like destroying any other dataset.
+      - Schedualing Snapshots
+        - Snapshots are memory and time cheap, so it is recommended to take plenty of snapshots
+        - consider creating a cron job to take snapshots hourly/daily/weekly/monthly maybe even by the minut.
+        - A possible schedual actually used by Time Slider:
+          - 15 min :: keeping 4 snapshots
+          - hourly :: keeping 24 snapshots
+          - daily :: keeping 31 snapshots
+          - weekly :: keeping 7 snapshots
+          - montly :: keeping 12 snapshots
+      - Since both snapshots and clones are cheap, take advantage of them..
+        - clones are useful to test deploying virtual machines, or development environments cloned from production environments for example.
+        - When you are done with a clone you can easily destroy it without affecting the parent dataset.
+          
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:2ua4041FTF.lan.local /u:trevor.wilson@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:trevor.wilson /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
