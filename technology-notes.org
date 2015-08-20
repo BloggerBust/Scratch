@@ -922,7 +922,22 @@ errors: No known data errors
       - Since both snapshots and clones are cheap, take advantage of them..
         - clones are useful to test deploying virtual machines, or development environments cloned from production environments for example.
         - When you are done with a clone you can easily destroy it without affecting the parent dataset.
-          
+***** ZFS Send
+      - Sending involves first taking a snapshot of the data and then sending the snapshot to ensure the data remains consistant over the duration of the transfer.
+        - Consequently there is no need to take the file system offline to make a backup.
+      - By default the data is sent to a single file that can be then moved like any other file.
+      - Sending a snapshot creates an output stream that must be directed.
+        - basic send to file
+        #+BEGIN_SRC shell
+        # zfs snapshot tank/test@tuesday
+        # zfs send tank/test@tuesday > /backup/test-tuesday.img
+        #+END_SRC
+        - 
+          send to encrypted file
+          #+BEGIN_SRC shell
+          # zfs snapshot tank/test@tuesday
+          # zfs send tank/test@tuesday | xz | openssl en -aes-256-cbc -a -salt > /backup/test-tuesday.img.xz.asc
+          #+END_SRC
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:2ua4041FTF.lan.local /u:trevor.wilson@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:trevor.wilson /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
