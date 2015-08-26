@@ -922,29 +922,64 @@ errors: No known data errors
       - Since both snapshots and clones are cheap, take advantage of them..
         - clones are useful to test deploying virtual machines, or development environments cloned from production environments for example.
         - When you are done with a clone you can easily destroy it without affecting the parent dataset.
-***** ZFS Send
-      - Sending involves first taking a snapshot of the data and then sending the snapshot to ensure the data remains consistant over the duration of the transfer.
-        - Consequently there is no need to take the file system offline to make a backup.
-      - By default the data is sent to a single file that can be then moved like any other file.
-      - Sending a snapshot creates an output stream that must be directed.
-        - basic send to file
-        #+BEGIN_SRC shell
-        # zfs snapshot tank/test@tuesday
-        # zfs send tank/test@tuesday > /backup/test-tuesday.img
-        #+END_SRC
-        - 
-          send to encrypted file
+***** ZFS Send / Receive
+      - ZFS Send
+        - Sending involves first taking a snapshot of the data and then sending the snapshot to ensure the data remains consistant over the duration of the transfer.
+          - Consequently there is no need to take the file system offline to make a backup.
+        - By default the data is sent to a single file that can be then moved like any other file.
+        - Sending a snapshot creates an output stream that must be directed.
+          - basic send to file
+            #+BEGIN_SRC shell
+            # zfs snapshot tank/test@tuesday
+            # zfs send tank/test@tuesday > /backup/test-tuesday.img
+            #+END_SRC
+          - send to encrypted file. Note that xz compresses the snapshot before encryption.
+            #+BEGIN_SRC shell
+            # zfs snapshot tank/test@tuesday
+            # zfs send tank/test@tuesday | xz | openssl en -aes-256-cbc -a -salt > /backup/test-tuesday.img.xz.asc
+            #+END_SRC
+      - ZFS Receive
+        - receive also works with streams.
+        - receive the snapshot image into any storage pool and it will create the necessary dataset.
+          - == zfs receive tank-test2 < /backup/test-tuesday.img ==
+        - to recieve an encrypted and compressed snapshot we would do the following:
+          - == openssl enc -d -aes-256-cbc -a -in /backup/test-tuesday.img.xz.asc | unxz | zfs receive tank/test2 ==
+      - Combining Send and Recieve
+        - == zfs send tank/test@tuesday | zfs receive pool/test == :: Send directly from snapshot to local storage pool
+        - == zfs send tank/test@tuesday | ssh user@server@example.com "zfs receive pool/test == :: Send directly from local snapshot to remote storage pool
+***** ZVOLs
+      - A ZFS Volume that has been exported to the system as a block device.
+      - Resides in a storage pool.
+      - Takes advantage of the underlying things that ZFS offers (RAID, copy-on-write, scrubbing, duplication / compression etc).
+      - Takes advantage of the ZIL and ARC.
+      - ZVOLs are first class block devices and so you can do anything with them that you can do with any other block device.
+      - Creating a ZFS Vol
+        - uses the -V flag from zfs create command and requires a size.
           #+BEGIN_SRC shell
-          # zfs snapshot tank/test@tuesday
-          # zfs send tank/test@tuesday | xz | openssl en -aes-256-cbc -a -salt > /backup/test-tuesday.img.xz.asc
+          # zfs create -V 1G tank/disk1
+          # ls /dev/zvol/tank/disk1
+          lrwxrwxrwx 1 root root 11 Dec 20 22:10 /dev/zvol/tank/disk1 -> ../../zd144
+          # ls /dev/tank/disk1
+          lrwxrwxrwx 1 root root 8 Dec 20 22:10 /dev/tank/disk1 -> ../zd144
           #+END_SRC
+        - Nearly instantaneous regardless of size.
+        - Compare creating a block device with gnu/linux from a file image and having /dev/loop0 represent the file. 
+          - As with any other block device it can be formated and added to swap, but it is limited. 
+          - By default there are only 8 loop back devices. This number can be changed of course.
+          - In contrast with zfs you can create 2^64 ZVOLs.
+          - Also, the gnu/linux way requires a pre-allocated image on top of the file system so there are three layers to manage. The block device, the file and the blocks on the file system.
+          - In contrast ZVOL block devices are exported right off the storage pool just like any other dataset.
+      - Swap on a ZVOL
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:2ua4041FTF.lan.local /u:trevor.wilson@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:trevor.wilson /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
 * TODO
-  - [0/0] Install Cron
-  - [0/2] Things to Schedual with Cron
+  - [0/0] Install Cron    
+  - [0/4] Things to Schedual with Cron
     - [ ] Schedual Zpool scrub
     - [ ] Email reports of storage pool capacity monthly
+    - [ ] Schedual zfs snapshots
+    - [ ] Schedual last snapshot of the night to be compressed, encrypted, and sent to remote storage.
+    
   - [ ] Make a snapshot
   - [ ] Enable compression
