@@ -970,6 +970,53 @@ errors: No known data errors
           - Also, the gnu/linux way requires a pre-allocated image on top of the file system so there are three layers to manage. The block device, the file and the blocks on the file system.
           - In contrast ZVOL block devices are exported right off the storage pool just like any other dataset.
       - Swap on a ZVOL
+        - create 1GB of swap on a ZVOL and add it to the kernel
+          #+BEGIN_SRC shell
+          # zfs create -V 1G tank/swap
+          # mkswap /dev/zvol/tank/swap
+          # swapon /dev/zvol/tank/swap          
+          #+END_SRC
+          - now running free will show the swap.
+      - Ext4 on a ZVOL
+        - it is possible to create a zvol, partition it and make multiple file systems on it.
+        - The advantage is that you can enable compression, make snapshots, send the dataset to offsite back and do all the other things that zfs allows you to do with datasets that you can't do with those same file systems without zfs.
+        - Here we will do just that:
+          #+BEGIN_SRC shell
+          # zfs create -V 100G tank/ext4
+          # fdisk /dev/tank/ext4
+          ( follow the prompts to create 2 partitions- the first 1 GB in size, the second to fill the rest )
+          # fdisk -l /dev/tank/ext4
+
+          Disk /dev/tank/ext4: 107.4 GB, 107374182400 bytes
+          16 heads, 63 sectors/track, 208050 cylinders, total 209715200 sectors
+          Units = sectors of 1 * 512 = 512 bytes
+          Sector size (logical/physical): 512 bytes / 8192 bytes
+          I/O size (minimum/optimal): 8192 bytes / 8192 bytes
+          Disk identifier: 0x000a0d54
+
+          Device Boot      Start         End      Blocks   Id  System
+/dev/tank/ext4p1            2048     2099199     1048576   83  Linux
+/dev/tank/ext4p2         2099200   209715199   103808000   83  Linux
+          
+          # mkfs.ext4 /dev/zd0p1
+          # mkfs.ext4 /dev/zd0p2
+          # mkdir /mnt/zd0p{1,2}
+          # mount /dev/zd0p1 /mnt/zd0p1
+          # mount /dev/zd0p2 /mnt/zd0p2
+          #+END_SRC
+        - Now we can enable compression, copy over some data, and take a snapshot
+          #+BEGIN_SRC shell
+           # zfs set compression=lzjb pool/ext4
+           # tar -cf /mnt/zd0p1/files.tar /etc/
+           # tar -cf /mnt/zd0p2/files.tar /etc /var/log/
+           # zfs snapshot tank/ext4@001          
+          #+END_SRC
+      - ZVOL storage for VMs
+        - It is common to use block devices as the backend storage for VMs.
+        - You can attach the block device to a virtual machine and from its perspective the system will have a /dev/vda or /dev/sda depending on the setup.
+        - The vm will get all of the bennefits that ZFS provides, such as snapshots, compression, deduplication, data integrity, drive redundancy, etc.
+        - TODO: add snippet here of kvm configuration using block device.
+      - caveat: ZFS is not a clustered file system. You cannot replicate zvols across a cluster.
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:2ua4041FTF.lan.local /u:trevor.wilson@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:trevor.wilson /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
@@ -979,7 +1026,6 @@ errors: No known data errors
     - [ ] Schedual Zpool scrub
     - [ ] Email reports of storage pool capacity monthly
     - [ ] Schedual zfs snapshots
-    - [ ] Schedual last snapshot of the night to be compressed, encrypted, and sent to remote storage.
-    
+    - [ ] Schedual last snapshot of the night to be compressed, encrypted, and sent to remote storage.    
   - [ ] Make a snapshot
   - [ ] Enable compression
