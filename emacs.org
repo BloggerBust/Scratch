@@ -244,6 +244,8 @@
       - (ac-config-default)
   - Multiple-cursors :: mark several reagions at once.
     - https://github.com/magnars/multiple-cursors.el
+  - Expand-region :: increase selected region by semantic units
+    - https://github.com/magnars/expand-region.el
 ** packages to install
 - M-x package-install browse-kill-ring :: M-x browse-kill-ring opens a buffer that contains everything in the kill ring. Also includes numerouse other browse-kill-ring functions.
 - M-x package-install ido-flex :: fuzzy ido-mode pattern matching. https://github.com/lewang/flx
