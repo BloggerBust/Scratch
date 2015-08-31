@@ -226,6 +226,30 @@
   5. The init script from the initramfs will then switch the root towards the real root file system
   6. Lastly the initramfs init script will call /sbin/init (the init script on the real root file system)
   7. The boot process will continue as normal.
+** dcron
+   - /etc/crontab is the system crontab
+   - uses crontab in conjunction with conrbase to run scripts in /etc/cron.{daily,hourly,weekly,monthly}
+   - == # crontab /etc/crontab == :: Run everytime changes are made to the system crontab.
+   - == # crontab -l == :: display a list of cron jobs
+     - jobs schedualed in system crontab may not show up in this list
+   - It is not necessary to use the system crontab simply by never running:
+     - == # crontab /etc/crontab ==
+     - == # sed -i -e "s/^/#/" /etc/crontab == :: to be extra careful you can comment all lines out in /etc/crontab:
+   - Schedualing Jobs
+     - == # crontab -e == :: edit crontab
+     - == # crontab -d [user] == :: delete crontab. If no user is supplied then it deletes the current user's crontab.
+     - == # crontab file == :: new crontab
+     - Each lineitem in a crontab has the following fields:
+       | Minutes | Hours  | Day of Month | Month  | Day of week |
+       | (0-59)  | (0-23) | (1-31)       | (1-12) | (0-7)       |
+       - Monday is day 1, Sunday is day 0.
+       - Days of week and months can be specified by 3 letter abbreviations or numbers.
+       - Each field can specify a range or a comma seperated list. i.e. 1-5, mon-fri or 1,3,4.
+       - Ranges can have a step i.e. 1-5/2 = 1,3,5 where 2 is the step to increment by.
+       - Regarding Day of Month and Day of week. If * is used for one, then the other takes precendence. If * is used for both, this means every day.
+   - Schedualing jobs with the system crontab
+     - == # sudo crontab /etc/crontab == :: to replace root's current crontab
+     - Then simply drop the scripts into /etc/con.{daily,hourly,weekly,monthly}
 ** Gentoo
 *** Use Variables
     - If a use variable has a * by it that means that it changed since the last build.
