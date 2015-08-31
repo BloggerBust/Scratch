@@ -173,7 +173,6 @@
   - -, +, 1, 1), 1. :: bullets
   - unordered lists use - or +
   - ordered lists start with a number
-
 *** Code
   - <s <tab> :: creates a code snippet. Following the BEGIN_SRC you must specify the language of the snippet.
       #+BEGIN_SRC c
@@ -188,7 +187,6 @@
   - C-' :: If cursor is inside snippent then this will open a new buffer in the snippets languages mode for editing.
     - toggle will commit the edit to the code snippet.
   - =some code= :: surrounding text with equal signs gives inline code snippet.
-
 *** Lists
     + M-<RET> (org-insert-heading)
       + Inserts a new item at current level.
@@ -201,6 +199,13 @@
     + C-c -
       + Cycle through bullets ('-','+','*','1.','1)')
 
+*** Tables
+    - C-c | :: Turn a region into a table
+    - M-<right> :: moves current column to the right.
+    - M-<left> :: moves current column to the left.
+    - M-<up> :: moves current row up.
+    - M-<down> :: moves current row down.
+    - Shift Prefix causes inserts instead of moves.
 *** TODOs
     - C-c C-t :: Creates a TODO. This must be on a heading. Alternatively to add a todo you simply type TODO after heading markup.
     - C-c C-c :: Add a tag. Tags are actually created for header nodes, but TODOs are a type of header node so you can tag them.
