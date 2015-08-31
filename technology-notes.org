@@ -730,7 +730,7 @@ errors: No known data errors
       - Some properties that are set on the dataset also apply to the whole pool
       - Setting properties only applies to data moving forward and never backward.
       - Properties are not retroactive i.e. if you replace a drive with a larger drive and then set autoexpand property after it has been installed it will not autoexpand. It will instead appear as a smaller drive.
-      - 
+
 ***** Best Practices & Caveats
       - The idea is to optimize space efficiency, performance and ensure maximum data integrity
       - Best Practices
@@ -1041,6 +1041,64 @@ errors: No known data errors
         - The vm will get all of the bennefits that ZFS provides, such as snapshots, compression, deduplication, data integrity, drive redundancy, etc.
         - TODO: add snippet here of kvm configuration using block device.
       - caveat: ZFS is not a clustered file system. You cannot replicate zvols across a cluster.
+***** ZFS Properties
+      - datasets contain properties that can be retrieved and altered.
+      - Many properties are read-only
+      - There are lots of dataset properties.
+      - properties can be inherited from parent datasets.
+      - Custom property support.
+      - ZFS Get
+        - == # zfs get used,available,compressionratio tank/test == Retrieve multiple properties for a dataset via a comma seperated list.
+        - == # zfs get all tank/test == Retrieve all of the properties for a dataset.
+      - Inheritance
+        - tank is a storage pool, but it is also a valid ZFS dataset. Any datasets nested under tank may inherit some properties.
+        - We set the compression algorithm on the storage pool file system tank, so all nested datasets inherit this property from tank.
+          #+BEGIN_SRC shell
+          # zfs create -o compression=gzip tank/test/one
+          # zfs get -r compression tank
+          NAME           PROPERTY     VALUE     SOURCE
+          tank           compression  lzjb      local
+          tank/test      compression  lzjb      inherited from tank
+          tank/test/one  compression  gzip      local
+          #+END_SRC
+        - zfs inherit command sets a properties value to be inherited from its parent.
+          #+BEGIN_SRC shell
+          # zfs inherit compression tank/test/one
+          # zfs get -r compression tank
+          NAME           PROPERTY     VALUE     SOURCE
+          tank           compression  lzjb      local
+          tank/test      compression  lzjb      inherited from tank
+          tank/test/one  compression  lzjb      inherited from tank
+          #+END_SRC
+        - To set a parents property and have the children all inherit use the -r flag
+          #+BEGIN_SRC shella
+          # zfs set compression=gzip tank
+          # zfs inherit -r compression tank/test
+          # zfs get -r compression tank
+          NAME           PROPERTY     VALUE     SOURCE
+          tank           compression  gzip      local
+          tank/test      compression  gzip      inherited from tank
+          tank/test/one  compression  gzip      inherited from tank
+          #+END_SRC
+        - Caution: recursion can be dangerous. This next command turns off compression on all nested datasets of tank. This caution applies to datasets, volumes and snapshots. Anywhere recursion can be used.
+          #+BEGIN_SRC shell
+          # zfs inherit -r compression tank
+          # zfs get -r compression tank
+          NAME           PROPERTY     VALUE     SOURCE
+          tank           compression  off       default
+          tank/test      compression  off       default
+          tank/test/one  compression  off       default
+          #+END_SRC
+      - User Dataset Properties
+        - Motivation: To create custom properties for appliations designed specifically for ZFS. I am not making any, so I am not taking notes here.
+      - Considerations:
+        - Always read the man pages before altering properties.
+        - Some dataset properties are not fully implemented on ZFS on Linux.
+        - Some dataset properties apply to the whole pool, such as duplication.
+        - Many properties only apply to newly written datap; hence, are not retroactive.
+        - The parent storage pool is also a ZFS dataset, any child datasets will inherit non-default properties.
+          - the same is true for nested datasets, snapshots and volumes.
+***** Best Practices / Caveats
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:2ua4041FTF.lan.local /u:trevor.wilson@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:trevor.wilson /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
