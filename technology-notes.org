@@ -200,6 +200,9 @@
    - =$ program-name &>file= :: Redirect the standard error (stderr) and stdout to file
      =$ program-name > file-name 2>&1= :: Alternate redirect the standard error (stderr) and stdout to file
 
+** Telly Type Terminals TTYs
+   - == Ctrl-Alt-Fx == :: switch to TTYx
+   - == $ chvt x == :: switch to TTYx via command line. Good for ssh.
 ** Boot Process
   1. Boot loader loads Linux.
   2. Linux assumes control of the system.
@@ -309,7 +312,7 @@
        2. PT_PAX
           - Places the flags in an ELF object's program header called PAX_FLAGS.
           - Flags are in the body of the object and so if the object is moved or copied the flags are also.
-          - The object must have the PAX_FLAGS program header to work. Most Linux distrobutions do not build their executables and libraries with this program header.
+          - The object must have the PAX_FLAGS program header to work. Most Linux distributions do not build their executables and libraries with this program header.
        3. XATTR_PAX
           - This is the preferred approach.
           - PaX flags are palced in the file system's extended attributes.
