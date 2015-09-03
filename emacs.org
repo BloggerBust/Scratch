@@ -28,7 +28,8 @@
 - M-x :: Displays a meta prompt in the Mini-buffer for running emacs commands
 - C-u - :: Prefix command. Pass a number followed by a command and it will repeat that command the specified number of times.
 - C-_ :: undo!
-
+- Alt-u :: upper-case rest of word
+- Alt-l :: lower-case reset of word
 ** File
    - C-x C-f :: Find file.
    - C-x C-s :: Save file.
