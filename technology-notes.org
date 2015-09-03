@@ -186,6 +186,7 @@
   - lddtree --copy-to-tree=/source/path /target/path :: from app-misc/pax-utils USE="python"
   - find /usr/portage -name '*.ebuild' -o -name '*.eclass' | xargs grep MAKE_CONF_VARIABLE :: finds all package references to MAKE_CONF_VARIABLE
   - lspci | grep -i vga :: detect video controller
+  - numactl --hardware :: check to see if the hardware has numa support. This will return the number of numa nodes.
 *** Detect Motherboard, Bios and CPU
    - dmidecode -t 4 | grep ID :: The CPU ID
    - dmidecode -t 0 :: Bios info
@@ -226,6 +227,10 @@
   5. The init script from the initramfs will then switch the root towards the real root file system
   6. Lastly the initramfs init script will call /sbin/init (the init script on the real root file system)
   7. The boot process will continue as normal.
+** Profiling and Instrumentation
+   - eBPF :: extended berkly packet filtering
+     - Reference: http://www.brendangregg.com/blog/2015-05-15/ebpf-one-small-step.html
+   - Kprobes
 ** dcron
    - /etc/crontab is the system crontab
    - uses crontab in conjunction with conrbase to run scripts in /etc/cron.{daily,hourly,weekly,monthly}
@@ -320,7 +325,11 @@
             - Must support security.*, trusted.* namespaces.
      - Building a PaX Kernel
        - Reference :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Building_a_PaX_Kernel
-
+       - Kernel to look into:
+         - [CONFIG_USELIB] :: do I need this for hardened?
+         - 3.24.24-gentoo > General setup > RCU Subsystem: Build-Forced no-CBs CPUs :: What is this? It is not available in hardened.
+         - Is it advisable to install kprobes and eBPF on a production server?
+           - CONFIG_BPF_SYSCALL
 *** ZFS 
 **** Zpool Administration
     - References:
