@@ -1114,3 +1114,8 @@ errors: No known data errors
     - [ ] Schedual last snapshot of the night to be compressed, encrypted, and sent to remote storage.    
   - [ ] Make a snapshot
   - [ ] Enable compression
+
+
+
+CONFIG_ZPOOL
+- What is zbud, zsmalloc
