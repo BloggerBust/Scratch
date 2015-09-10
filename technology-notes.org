@@ -262,6 +262,8 @@
 *** Use Variables
     - If a use variable has a * by it that means that it changed since the last build.
 *** Hardened Profile
+    - References:
+      - https://wiki.gentoo.org/wiki/Project:Hardened :: Gentoo Hardened Project
 **** PIC (Position Independent Code)
      - Functions and data are accessed through an indirect table called the Global Offset Table (GOT).
      - The purpose of indirect addressing is to fascillitate the access of functions and data independently of the corresponding load address. Only the symbols in the text segment exported in the GOT need updating at run-time deending on the current load address of the various shared libraries in the address space of the running process.
@@ -274,7 +276,15 @@
      - In practice PIC objects can be linked into static archive and often non-PIC objects can be similarly linked into shared archives both with execution and load speed overhead.
      - If the shared object is built from code that is not PIC then the text segment will usually require a large number of relocations to be performed at runtime. The system overhead from the run-time linker required to handle this can cause serious performance degradation.
      - =# readelf -d foo= :: If the output contains a TEXTREL entry then text relocations exist.
-**** PaX
+**** Grsecurity
+     - References: 
+       - http://grsecurity.net/ :: project page
+       - https://wiki.gentoo.org/wiki/Hardened/Grsecurity2_Quickstart :: quick start guid
+       - http://en.wikibooks.org/wiki/Grsecurity/Appendix/Grsecurity_and_PaX_Configuration_Options :: Features Page
+       - I follow the recommended PaX kernel configuration on this page rather than that of the PaX configuration Quick Start page. The reason being that this details how to set a configuration for the XATTR_PAX markings more clearly.
+       
+         
+***** PaX
      - Purpose is to protect against a class of exploits that give an attacker arbitrary read / write access to the attacked task's address space. These exploits include buffer and heap overflows and similar attacks. PaX is the first line of defense offered by Hardened Gentoo.
      - Implements the least privilege protections for memory pages. i.e computer programs should only  be allowed to do what they have to do in order to be able to execute properly and nothing more.
      - The exploit techniques that PaX defends against include:
@@ -328,6 +338,7 @@
             - Must support security.*, trusted.* namespaces.
      - Building a PaX Kernel
        - Reference :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Building_a_PaX_Kernel
+                      
 
 *** ZFS 
 **** Zpool Administration
@@ -1134,3 +1145,4 @@ errors: No known data errors
     - CONFIG_BPF_SYSCALL
   - CONFIG_ZPOOL
     - What is zbud, zsmalloc
+  - I was not able to find all the kernel config options. Must review PaX kernel config options more closely.

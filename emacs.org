@@ -22,6 +22,9 @@
 - C-h f :: Describe function. If the point is on text that matches the name of a function, then that will become the default function to describe. Otherwise, a function name to describe may be entered.
 - C-h C-f :: Emacs FAQ
 - To resolve context specific options for a particular command Enter the start of the command followed by F1 for a list of all possible completions.
+- C-h i :: runs the command info
+  - m :: Pick menu item specified by name
+  - C-h f info-mode :: documents a list of all commands for this mode
 
 * Key-bindings
 - C-g :: Cancel whatever command was pending
