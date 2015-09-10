@@ -328,11 +328,7 @@
             - Must support security.*, trusted.* namespaces.
      - Building a PaX Kernel
        - Reference :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Building_a_PaX_Kernel
-       - Kernel to look into:
-         - [CONFIG_USELIB] :: do I need this for hardened?
-         - 3.24.24-gentoo > General setup > RCU Subsystem: Build-Forced no-CBs CPUs :: What is this? It is not available in hardened.
-         - Is it advisable to install kprobes and eBPF on a production server?
-           - CONFIG_BPF_SYSCALL
+
 *** ZFS 
 **** Zpool Administration
     - References:
@@ -1124,7 +1120,17 @@ errors: No known data errors
   - [ ] Make a snapshot
   - [ ] Enable compression
 
-
-
-CONFIG_ZPOOL
-- What is zbud, zsmalloc
+* JOTTED
+- Kernel to look into:
+  - [CONFIG_USELIB] :: do I need this for hardened?
+    - apparently not!
+  - 3.24.24-gentoo > General setup > RCU Subsystem: Build-Forced no-CBs CPUs :: What is this? It is not available in hardened.
+    - This has to do with configuring the RCU callbacks for specific cpus.It seems that this optino has been removed and that all cpus are no-CBs cpus.
+  - CONFIG_INTEGRITY
+    - IMA: Integrity Measurement Module
+    - EVM: Extended Verification Module
+    - Right now this is only for dev purposes. It is not stable.
+  - Is it advisable to install kprobes and eBPF on a production server?
+    - CONFIG_BPF_SYSCALL
+  - CONFIG_ZPOOL
+    - What is zbud, zsmalloc
