@@ -179,7 +179,9 @@
     - git push --tags
  3. Now visit github, click on the project and then click on the release link to view the release.
 
-* Linux 
+* Linux
+** Kernel
+- =# make help= :: output help
 ** Commands :: remember to always check the man pages.
   - lsblk :: list block devices.
   - lddtree --help :: there are no man pages for this command
@@ -202,8 +204,8 @@
      =$ program-name > file-name 2>&1= :: Alternate redirect the standard error (stderr) and stdout to file
 
 ** Telly Type Terminals TTYs
-   - == Ctrl-Alt-Fx == :: switch to TTYx
-   - == $ chvt x == :: switch to TTYx via command line. Good for ssh.
+   - =Ctrl-Alt-Fx= :: switch to TTYx
+   - =$ chvt x= :: switch to TTYx via command line. Good for ssh.
 ** Boot Process
   1. Boot loader loads Linux.
   2. Linux assumes control of the system.
@@ -237,16 +239,16 @@
 ** dcron
    - /etc/crontab is the system crontab
    - uses crontab in conjunction with conrbase to run scripts in /etc/cron.{daily,hourly,weekly,monthly}
-   - == # crontab /etc/crontab == :: Run everytime changes are made to the system crontab.
-   - == # crontab -l == :: display a list of cron jobs
+   - =# crontab /etc/crontab= :: Run everytime changes are made to the system crontab.
+   - =# crontab -l= :: display a list of cron jobs
      - jobs schedualed in system crontab may not show up in this list
    - It is not necessary to use the system crontab simply by never running:
-     - == # crontab /etc/crontab ==
-     - == # sed -i -e "s/^/#/" /etc/crontab == :: to be extra careful you can comment all lines out in /etc/crontab:
+     - =# crontab /etc/crontab=
+     - =# sed -i -e "s/^/#/" /etc/crontab= :: to be extra careful you can comment all lines out in /etc/crontab:
    - Schedualing Jobs
-     - == # crontab -e == :: edit crontab
-     - == # crontab -d [user] == :: delete crontab. If no user is supplied then it deletes the current user's crontab.
-     - == # crontab file == :: new crontab
+     - =# crontab -e= :: edit crontab
+     - =# crontab -d [user]= :: delete crontab. If no user is supplied then it deletes the current user's crontab.
+     - =# crontab file= :: new crontab
      - Each lineitem in a crontab has the following fields:
        | Minutes | Hours  | Day of Month | Month  | Day of week |
        | (0-59)  | (0-23) | (1-31)       | (1-12) | (0-7)       |
@@ -256,7 +258,7 @@
        - Ranges can have a step i.e. 1-5/2 = 1,3,5 where 2 is the step to increment by.
        - Regarding Day of Month and Day of week. If * is used for one, then the other takes precendence. If * is used for both, this means every day.
    - Schedualing jobs with the system crontab
-     - == # sudo crontab /etc/crontab == :: to replace root's current crontab
+     - =# sudo crontab /etc/crontab= :: to replace root's current crontab
      - Then simply drop the scripts into /etc/con.{daily,hourly,weekly,monthly}
 ** Gentoo
 *** Use Variables
@@ -282,8 +284,6 @@
        - https://wiki.gentoo.org/wiki/Hardened/Grsecurity2_Quickstart :: quick start guid
        - http://en.wikibooks.org/wiki/Grsecurity/Appendix/Grsecurity_and_PaX_Configuration_Options :: Features Page
        - I follow the recommended PaX kernel configuration on this page rather than that of the PaX configuration Quick Start page. The reason being that this details how to set a configuration for the XATTR_PAX markings more clearly.
-       
-         
 ***** PaX
      - Purpose is to protect against a class of exploits that give an attacker arbitrary read / write access to the attacked task's address space. These exploits include buffer and heap overflows and similar attacks. PaX is the first line of defense offered by Hardened Gentoo.
      - Implements the least privilege protections for memory pages. i.e computer programs should only  be allowed to do what they have to do in order to be able to execute properly and nothing more.
@@ -338,8 +338,11 @@
             - Must support security.*, trusted.* namespaces.
      - Building a PaX Kernel
        - Reference :: https://wiki.gentoo.org/wiki/Hardened/PaX_Quickstart#Building_a_PaX_Kernel
-                      
 
+                      
+***** RBAC
+      - gradm :: The administration program for the grsecurity RBAC system
+      - 
 *** ZFS 
 **** Zpool Administration
     - References:
@@ -569,31 +572,31 @@ errors: No known data errors
           - Writes data to the disk acknowledging that the export was done
           - Removes all knowledge that the storage pool existed in the system
         - Exporting the storage pool is necessary before importing the storage pool into a new system. Also, unwritten data may not have been flushed to disk.
-        - == root # zpool export tank ==
+        - =root # zpool export tank=
           - Will attempt to unmount all ZFS datasets as well as the pool
           - If the zpool refuses to export you can add -f to force the export.
       - Importing Storage Pools
         - Once the drives have been physically installed they may be imported.
-        - == root # zpool import tank == :: Imports the zpool tank
+        - =root # zpool import tank= :: Imports the zpool tank
         - Once imported it is a good idea to check the status of the zpool
-        - == root # zpool status tank
+        - =root # zpool status tank=
           - A status of ONLINE means that everything is healthy
           - Status FAULTED :: means one or more drives appear faulty to the system
           - Refer to documentation for troubleshooting status codes
         - Import multiple zpools by listing them after the import command delimited by white space, or by passing the -a flag for importing all known zpools.
-          - == root # zpool import tank1 tank2 tank3
-          - == root # zpool import -a
+          - =root # zpool import tank1 tank2 tank3=
+          - =root # zpool import -a=
       - Recovering a Destroyed Pool
         - Destroying a pool does not wipe the data on the disks. The pool can be discovered.
-        - == (server A) root # zpool destroy tank == :: Does not wipe data
-          == (server B) root # zpool import -D == :: Lists destroyed pools.
+        - =(server A) root # zpool destroy tank= :: Does not wipe data
+          =(server B) root # zpool import -D= :: Lists destroyed pools.
           - Run the import command again specifying the pool name to bring it fully online.
           - If more than one storage pool is found with the same name then the unique identifier of the storage pool must be used as the argument to import to bring it fully online.
       - Upgrading Storage Pools
         - Once a zpool has been upgraded servers running older versions of zpool will not be able to import it.
         - There is no way to downgrade.
-        - == root # zpool upgrade -v == :: Outputs the version of ZFS pool that the system is currently running. Display a list of supported zpool versions and some descriptions for each.
-        - == root # zpool upgrade -a == :: Upgrades the zpool and enables all supported features. See man page to upgrade to a specific version and feature set.
+        - =root # zpool upgrade -v= :: Outputs the version of ZFS pool that the system is currently running. Display a list of supported zpool versions and some descriptions for each.
+        - =root # zpool upgrade -a= :: Upgrades the zpool and enables all supported features. See man page to upgrade to a specific version and feature set.
         - On shutdown the zfs init script may just unmount the pools and not export them in which case the zpools would not be able to be imported to by another system. If this is the case you will have to explicitly export the zpools first.
 
 ***** Scrub and Resilver
@@ -608,11 +611,11 @@ errors: No known data errors
        - The scrub involves checking every block in the storage pool against its known checksum using the "fletcher4" (default) 256-bit algorithm.
        - Must be performed explicitly.
        - Recommended that scrubbing is performed on a regularly scheduled interval (good job for chron).
-       - == root # scrub tank == :: performs a scrub of the pool.
+       - =root # scrub tank= :: performs a scrub of the pool.
        - Can check status during a scrub.
        - Scrubs impact performance of disks.
-       - == root # scrub -s tank == Stops a scrub in progress.
-       - == 0 2 * * 0 /sbin/zpool scrub tank == crontab to perform scrub every Sunday at 2 in the morning.
+       - =root # scrub -s tank= Stops a scrub in progress.
+       - =0 2 * * 0 /sbin/zpool scrub tank= crontab to perform scrub every Sunday at 2 in the morning.
      - Self Healing Data
        - Requires redundancy. i.e. mirror
        - Will not only detect corrupt data on a scrub, but will correct the bad blocks if good data exists on a different disk.
@@ -640,9 +643,9 @@ errors: No known data errors
          - After identifying the dead disk go to the storage array and find which serial number was not printed. The one that was not printed needs to be replaced. Pull the disk and replace it with a new one.
          - Restart the system and see if /dev/sde is repopulated by running the command again.
          - Then issue the following command to replace sde with the new disk at /dev/sde (note the new disk may not be /dev/sde in which case the command would be slightly different to reflect that)
-           == root # zpool replace tank sde sde == Rebuilds the data blocks on the new disk until it is in a completely healthy state. Check the status to know when the process has completed.
+           =root # zpool replace tank sde sde= Rebuilds the data blocks on the new disk until it is in a completely healthy state. Check the status to know when the process has completed.
      - Identifying Pool Problems
-       - == zpool status -x == :: the x flag only displays the status of pools that are exhibiting errors or are unavailable.
+       - =zpool status -x= :: the x flag only displays the status of pools that are exhibiting errors or are unavailable.
        - The zpool status fields:
          + pool- The name of the pool.
          + state- The current health of the pool. This information refers only to the ability of the pool to provide the necessary replication level.
@@ -670,13 +673,13 @@ errors: No known data errors
          | property | property name                                |
          | value    | property value                               |
          | source   | Property source, either 'default' or 'local' |
-       - == root # zpool get -p "all" == :: Retrieves a list of all properties 
-       - == root # zpool get -p PropName1,PropName2 == :: retrieves property details for the specified list of properties delimited by a comma with no white space i.e. PropName1,PropName2
+       - =root # zpool get -p "all"= :: Retrieves a list of all properties 
+       - =root # zpool get -p PropName1,PropName2= :: retrieves property details for the specified list of properties delimited by a comma with no white space i.e. PropName1,PropName2
      - Set properties
        - Properties that require a string argument do not have an easy way to get the value back to a default value. With other property types, if you try to set the property to an invalid argument then an error will print to the screen displaying available valid values, but it will not indicate which was the default value.
        - If the source column has "default" then the setting has not been user-defined, if it is "local", then it was user-defined.
-       - == root # zpool set comment="Contact admins@example.com" tank == :: sets the comment property. This will also change the source from "default" to "local"
-       - == root # zpool create -o ashift=12 tank raid1 sda sdb == :: an example of setting properties at zpool creation time.
+       - =root # zpool set comment="Contact admins@example.com" tank= :: sets the comment property. This will also change the source from "default" to "local"
+       - =root # zpool create -o ashift=12 tank raid1 sda sdb= :: an example of setting properties at zpool creation time.
      - Properties apply to the whole pool, consequently ZFS datasets inherit property settings from the pool.
      - Some properties that are set on the dataset also apply to the whole pool
      - Setting properties only applies to data moving forward and never backward.
@@ -738,13 +741,13 @@ errors: No known data errors
           | property | property name                                |
           | value    | property value                               |
           | source   | Property source, either 'default' or 'local' |
-        - == root # zpool get -p "all" == :: Retrieves a list of all properties 
-        - == root # zpool get -p PropName1,PropName2 == :: retrieves property details for the specified list of properties delimited by a comma with no white space i.e. PropName1,PropName2
+        - =root # zpool get -p "all"= :: Retrieves a list of all properties 
+        - =root # zpool get -p PropName1,PropName2= :: retrieves property details for the specified list of properties delimited by a comma with no white space i.e. PropName1,PropName2
       - Set properties
         - Properties that require a string argument do not have an easy way to get the value back to a default value. With other property types, if you try to set the property to an invalid argument then an error will print to the screen displaying available valid values, but it will not indicate which was the default value.
         - If the source column has "default" then the setting has not been user-defined, if it is "local", then it was user-defined.
-        - == root # zpool set comment="Contact admins@example.com" tank == :: sets the comment property. This will also change the source from "default" to "local"
-        - == root # zpool create -o ashift=12 tank raid1 sda sdb == :: an example of setting properties at zpool creation time.
+        - =root # zpool set comment="Contact admins@example.com" tank= :: sets the comment property. This will also change the source from "default" to "local"
+        - =root # zpool create -o ashift=12 tank raid1 sda sdb= :: an example of setting properties at zpool creation time.
       - Properties apply to the whole pool, consequently ZFS datasets inherit property settings from the pool.
       - Some properties that are set on the dataset also apply to the whole pool
       - Setting properties only applies to data moving forward and never backward.
@@ -836,22 +839,22 @@ errors: No known data errors
       - Datasets can have quotas that limit there size.
       - The big advantage is that there is no need to worry about preallocated block devices because ZFS manages the entire stack and  therefore understands how much data has been occupied and how much is available.
       - Create a dataset
-        - == root # zfs create pool-name/dataset-name == :: Creates a data-set named data-set in the pool named pool-namen
+        - =root # zfs create pool-name/dataset-name= :: Creates a data-set named data-set in the pool named pool-namen
       - Mounting DataSets
         - Datasets are not exportable block devices by default so there is nothing to directly mount; hence, there is nothing in /etc/fstab for persistence accross reboots.
         - Instead, the storage pool can be imported and zfs mount can be run for each dataset.
-        - == root # zfs mount /<pool-name>/<dataset-name> == :: <dataset-name has bee mounted to the pool named <pool-name>
-        - == root # zfs unmount /<pool-name>/<dataset-name> == :: <dataset-name has been umounted from <pool-name>
-        - == root # zfs set mountpoint=/mnt/<data-setname> <pool-name>/<data-setname> == :: Sets the data-set mountpoint property
+        - =root # zfs mount /<pool-name>/<dataset-name>= :: <dataset-name has bee mounted to the pool named <pool-name>
+        - =root # zfs unmount /<pool-name>/<dataset-name>= :: <dataset-name has been umounted from <pool-name>
+        - =root # zfs set mountpoint=/mnt/<data-setname> <pool-name>/<data-setname>= :: Sets the data-set mountpoint property
       - Nested Datasets
         - Nested datasets makes it possible to change properties to one dataset without affecting the other. i.e. setting compression on /var/log, but not on the parent data-set /var. 
-        - == root # zfs create /<pool-name>/<data-setname>/log == :: creates a nested dataset named "log"
+        - =root # zfs create /<pool-name>/<data-setname>/log= :: creates a nested dataset named "log"
       - Destroy a dataset
         - Frees up the blocks used by the dataset.
         - Cannot be reverted without a previous snapshot.
-        - == root # zfs destroy /<pool-name>/<data-setname> ==
+        - =root # zfs destroy /<pool-name>/<data-setname>=
       - Rename a dataset
-        - == root # zfs rename /<pool-name>/<data-setname1> /<pool-name>/<data-setname2> ==
+        - =root # zfs rename /<pool-name>/<data-setname1> /<pool-name>/<data-setname2>=
 ***** Compression and Duplication
       - Compression
         - is transparent. Zfs handles compression/decompression on the fly.
@@ -905,22 +908,22 @@ errors: No known data errors
         - Two types:
           - pool snapshots
             - pool@snapshot-name :: snapshot name syntax
-            - == zfs snapshot tank@tuesday == :: takes a snapshot of the tank pool named tuesday
+            - =zfs snapshot tank@tuesday= :: takes a snapshot of the tank pool named tuesday
           - dataset snapshots
             - pool/dataset@snapshot-name :: snapshot name syntax
-            - == zfs snapshot tank/test@tuesday == :: Takes a snapshot of the tank/test dataset named tuesday
+            - =zfs snapshot tank/test@tuesday= :: Takes a snapshot of the tank/test dataset named tuesday
       - Listing Snapshots
         - snapshots are stored in a hidden directory named .zfs. It is hidden even from ls -a command, but you can still cd to .zfs even though you cannot list it with ls -a.
         - The .zfs directory can be made visible by changing the snapdir property on the dataset.
-          - == zfs set snapdir=visible tank test == makes the .zfs directory visible to the ls -a command. Valid values are hidden and visible.
-        - == zfs list -t snapshot == :: will list the snapshots even if the snapdir is set to hidden.
-        - == zfs list -r -t snapshot tank == :: this will list only snapshots under tank recursivly.
+          - =zfs set snapdir=visible tank test= makes the .zfs directory visible to the ls -a command. Valid values are hidden and visible.
+        - =zfs list -t snapshot= :: will list the snapshots even if the snapdir is set to hidden.
+        - =zfs list -r -t snapshot tank= :: this will list only snapshots under tank recursivly.
       - Destroying Snapshots
-        - == zfs destroy tank/test@tuesday == :: Similar to destroying a storage pool or a dataset.
+        - =zfs destroy tank/test@tuesday= :: Similar to destroying a storage pool or a dataset.
         - A snapshot of a dataset is a child file system of a dataset, therefore the dataset cannot be destroyed until all the snapshots (and nested datasets) of the dataset have been destroyed.
       - Renaming Snapshots
         - Must be renamed in the storage pool and ZFS dataset from which they were created.
-        - == zfs rename tank/test@tuesday tank/test@tuesday-19:15 ==
+        - =zfs rename tank/test@tuesday tank/test@tuesday-19:15=
       - Rolling Back to a Snapshot
         - Discards changes between the snapshot and the current state.
         - Can only roll back to most recent snapshot.
@@ -952,7 +955,7 @@ errors: No known data errors
           #+END_SRC
       - Destroying a Clone
         - Cannot destroy a snapshot until all dependant clones have been destroyed.
-        - == zfs destroy tank/tuesday == :: destroys the clone named tuesday in the storage pool tank. Just like destroying any other dataset.
+        - =zfs destroy tank/tuesday= :: destroys the clone named tuesday in the storage pool tank. Just like destroying any other dataset.
       - Schedualing Snapshots
         - Snapshots are memory and time cheap, so it is recommended to take plenty of snapshots
         - consider creating a cron job to take snapshots hourly/daily/weekly/monthly maybe even by the minut.
@@ -984,12 +987,12 @@ errors: No known data errors
       - ZFS Receive
         - receive also works with streams.
         - receive the snapshot image into any storage pool and it will create the necessary dataset.
-          - == zfs receive tank-test2 < /backup/test-tuesday.img ==
+          - =zfs receive tank-test2 < /backup/test-tuesday.img=
         - to recieve an encrypted and compressed snapshot we would do the following:
-          - == openssl enc -d -aes-256-cbc -a -in /backup/test-tuesday.img.xz.asc | unxz | zfs receive tank/test2 ==
+          - =openssl enc -d -aes-256-cbc -a -in /backup/test-tuesday.img.xz.asc | unxz | zfs receive tank/test2=
       - Combining Send and Recieve
-        - == zfs send tank/test@tuesday | zfs receive pool/test == :: Send directly from snapshot to local storage pool
-        - == zfs send tank/test@tuesday | ssh user@server@example.com "zfs receive pool/test == :: Send directly from local snapshot to remote storage pool
+        - =zfs send tank/test@tuesday | zfs receive pool/test= :: Send directly from snapshot to local storage pool
+        - =zfs send tank/test@tuesday | ssh user@server@example.com "zfs receive pool/test= :: Send directly from local snapshot to remote storage pool
 ***** ZVOLs
       - A ZFS Volume that has been exported to the system as a block device.
       - Resides in a storage pool.
@@ -1040,7 +1043,7 @@ errors: No known data errors
           Device Boot      Start         End      Blocks   Id  System
 /dev/tank/ext4p1            2048     2099199     1048576   83  Linux
 /dev/tank/ext4p2         2099200   209715199   103808000   83  Linux
-          
+ 
           # mkfs.ext4 /dev/zd0p1
           # mkfs.ext4 /dev/zd0p2
           # mkdir /mnt/zd0p{1,2}
@@ -1067,8 +1070,8 @@ errors: No known data errors
       - properties can be inherited from parent datasets.
       - Custom property support.
       - ZFS Get
-        - == # zfs get used,available,compressionratio tank/test == Retrieve multiple properties for a dataset via a comma seperated list.
-        - == # zfs get all tank/test == Retrieve all of the properties for a dataset.
+        - =# zfs get used,available,compressionratio tank/test= Retrieve multiple properties for a dataset via a comma seperated list.
+        - =# zfs get all tank/test= Retrieve all of the properties for a dataset.
       - Inheritance
         - tank is a storage pool, but it is also a valid ZFS dataset. Any datasets nested under tank may inherit some properties.
         - We set the compression algorithm on the storage pool file system tank, so all nested datasets inherit this property from tank.

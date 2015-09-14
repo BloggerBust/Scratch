@@ -289,7 +289,7 @@
    - C-c C-k ::: switch to char mode
 * Using emacs as a terminal multi-plexer
   - M-x server-start :: turns any emacs session into a server
-  - emacs --dameon :: starts emacs as a background daemon. This 
+  - emacs --daemon :: starts emacs as a background daemon. This 
   - emacsclient -t :: connect to the emacs server with a terminal
   - emacsclient -c :: same as -t, but opens a new graphical frame outside of the terminal.
   - Can be used like screen to keep long running terminal sessions alive after disconnecting from the server by running emacs as a daemon and then connecting via emacsclient.
