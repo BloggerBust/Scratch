@@ -182,6 +182,7 @@
 * Linux
 ** Kernel
 - =# make help= :: output help
+- =# make modules_install MODLIB=/lib64/{kernel-version}{cust-postfix}= :: Installs kernel modules to custom path
 ** Commands :: remember to always check the man pages.
   - lsblk :: list block devices.
   - lddtree --help :: there are no man pages for this command
@@ -189,6 +190,9 @@
   - find /usr/portage -name '*.ebuild' -o -name '*.eclass' | xargs grep MAKE_CONF_VARIABLE :: finds all package references to MAKE_CONF_VARIABLE
   - lspci | grep -i vga :: detect video controller
   - numactl --hardware :: check to see if the hardware has numa support. This will return the number of numa nodes.
+  - getconf
+    - used to get configuration values
+    - =getconf PAGE_SIZE= :: returns the systems page size in bytes.
 *** Detect Motherboard, Bios and CPU
    - dmidecode -t 4 | grep ID :: The CPU ID
    - dmidecode -t 0 :: Bios info
@@ -839,7 +843,7 @@ errors: No known data errors
       - Datasets can have quotas that limit there size.
       - The big advantage is that there is no need to worry about preallocated block devices because ZFS manages the entire stack and  therefore understands how much data has been occupied and how much is available.
       - Create a dataset
-        - =root # zfs create pool-name/dataset-name= :: Creates a data-set named data-set in the pool named pool-namen
+        - =root # zfs create pool-name/dataset-name= :: Creates a data-set named data-set in the pool named pool-name
       - Mounting DataSets
         - Datasets are not exportable block devices by default so there is nothing to directly mount; hence, there is nothing in /etc/fstab for persistence accross reboots.
         - Instead, the storage pool can be imported and zfs mount can be run for each dataset.
@@ -1121,6 +1125,25 @@ errors: No known data errors
         - The parent storage pool is also a ZFS dataset, any child datasets will inherit non-default properties.
           - the same is true for nested datasets, snapshots and volumes.
 ***** Best Practices / Caveats
+*** KVM
+    - Kernel-based Virtual Machines
+    - References:
+      - https://wiki.gentoo.org/wiki/QEMU
+      - https://wiki.gentoo.org/wiki/QEMU/Linux_guest
+    - grep --color -E "vmx|svm" /proc/cpuinfo :: finds lines showing kvm support
+    - /dev/kvm :: exists if kvm support is enabled
+    - It is most efficient to create zvol and install the kvm onto the block device.
+      - When creating a zvol for a kvm be sure to set the block size to a multiple of the OS page-size.
+        - 1xpage-size is most efficient for writes
+        - {2,4}xpage-size provides good efficiency and takes better advantage of transparent compression.
+        - {>4}xpage-size provides better compression, but should only be used for volumes with large data that does not get modified frequently.
+    - =sudo zfs create -p -b 8K -o compression=lz4 -o primarycache=none -o secondarycache=none -V 20G tank/vm/prod-web-1=
+    - =sudo qemu-system-x86_64 -machine help= :: outputs a list of supported systems.
+    - =sudo qemu-system-x86_64 -cpu help= :: outputs a list of supported cpu architectures
+    - The command to create a kvm on a block device
+      #+BEGIN_SRC bash
+      # qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive file=tank/vm/prod-web-1,if=ide -machine pc,accel=kvm,iommu=on -cpu host -smp 4
+      #+END_SRC
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:2ua4041FTF.lan.local /u:trevor.wilson@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:trevor.wilson /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
@@ -1133,6 +1156,10 @@ errors: No known data errors
     - [ ] Schedual last snapshot of the night to be compressed, encrypted, and sent to remote storage.    
   - [ ] Make a snapshot
   - [ ] Enable compression
+  - [ ] Do I need PAM? If not
+    - [ ] If I need it then configure it.
+    - [ ] If I don't, then remove it.
+  - [ ] Address WARNING: 'portageq envvar PORTDIR' is deprecated. Use any of 'get_repos, get_repo_path, repos_config' instead.
 
 * JOTTED
 - Kernel to look into:
