@@ -180,6 +180,9 @@
  3. Now visit github, click on the project and then click on the release link to view the release.
 
 * Linux
+- Getting help:
+  - =# equery f iproute2 | egrep '/usr/share/(man|doc)/'= :: Will list all help docs that reference.
+  - =# qlist iproute2 | grep -i doc= :: qlist is a link to q and lists all files owned by package. This will include all the docs.
 ** Kernel
 - =# make help= :: output help
 - =# make modules_install MODLIB=/lib64/{kernel-version}{cust-postfix}= :: Installs kernel modules to custom path
@@ -193,6 +196,8 @@
   - getconf
     - used to get configuration values
     - =getconf PAGE_SIZE= :: returns the systems page size in bytes.
+  - q :: invoke a portage utility applet.
+  - =equery u <package>= :: Similar to euse -i <useflag>, but brings up use flag info for a specific package.
 *** Detect Motherboard, Bios and CPU
    - dmidecode -t 4 | grep ID :: The CPU ID
    - dmidecode -t 0 :: Bios info
@@ -236,10 +241,46 @@
   5. The init script from the initramfs will then switch the root towards the real root file system
   6. Lastly the initramfs init script will call /sbin/init (the init script on the real root file system)
   7. The boot process will continue as normal.
-** Profiling and Instrumentation
-   - eBPF :: extended berkly packet filtering
-     - Reference: http://www.brendangregg.com/blog/2015-05-15/ebpf-one-small-step.html
-   - Kprobes
+** Networking
+- iproute2 is now default over ifconfig for network configuraiton, routing and tunneling
+*** Virtual Network Interface
+    - References:
+      - https://wiki.gentoo.org/wiki/QEMU_with_Open_vSwitch_network
+      - https://wiki.gentoo.org/wiki/QEMU/KVM_IPv6_Support    
+    - edit /etc/conf.d/net
+      - vlans-[interface-name]="1 2 .." :: declare numbered vlands for named interface
+      - Read the docs:
+        - =# less /usr/share/doc/netifrc-*/net.example.bz2=
+    - Set up a vlan for our physical interface 
+      - You will want to use the ipmi service for this
+      - vlan 1 is default. When adding new vlans always pick a vlan-id > 1 <= 4096
+      - vlans will be added in /proc/net/vlan/
+      - vlan conf is in /proc/net/vlan/conf
+      - To create a vlan link
+    #+BEGIN_SRC bash
+    $ sudo ip link set enp3s0f0 down
+    $ sudo ip address add 0.0.0.0/32 dev enp3s0f0
+    $ sudo ip link set enp3s0f0 up
+    $ sudo ip link add link enp3s0f0 name enp3s0f0.2 type vlan id 2
+    $ sudo ip addr add 198.27.74.225/24 brd 198.27.74.255 dev enp3s0f0.2
+    $ sudo ip link set enp3s0f0.2 up
+    $ sudo ip link add link enp3s0f0 name enp3s0f0.3 type vlan id 3
+    $ sudo ip addr add 192.95.36.241/24 brd 198.95.36.255 dev enp3s0f0.3
+    $ sudo ip link set enp3s0f0.3 up
+    #+END_SRC    
+  - ==$ ip -d link show enp3s0f0.2== :: shows the vlan id. Useful if the name does not include the id.
+  - ==$ ip -d addr show == :: show full address details.
+  - To remove a vlan link
+    #+BEGIN_SRC /bin/bash
+    $ sudo ip link set dev enp3s0f0.2 down
+    $ sudo ip link delete enp3s0f0.2
+    #+END_SRC
+    - 
+
+* Profiling and Instrumentation
+  - eBPF :: extended berkly packet filtering
+    - Reference: http://www.brendangregg.com/blog/2015-05-15/ebpf-one-small-step.html
+  - Kprobes
 ** dcron
    - /etc/crontab is the system crontab
    - uses crontab in conjunction with conrbase to run scripts in /etc/cron.{daily,hourly,weekly,monthly}
@@ -264,7 +305,7 @@
    - Schedualing jobs with the system crontab
      - =# sudo crontab /etc/crontab= :: to replace root's current crontab
      - Then simply drop the scripts into /etc/con.{daily,hourly,weekly,monthly}
-** Gentoo
+** Gentoo   
 *** Use Variables
     - If a use variable has a * by it that means that it changed since the last build.
 *** Hardened Profile
@@ -1140,13 +1181,277 @@ errors: No known data errors
     - =sudo zfs create -p -b 8K -o compression=lz4 -o primarycache=none -o secondarycache=none -V 20G tank/vm/prod-web-1=
     - =sudo qemu-system-x86_64 -machine help= :: outputs a list of supported systems.
     - =sudo qemu-system-x86_64 -cpu help= :: outputs a list of supported cpu architectures
+    - =gpasswd -a dustfinger kvm= :: allows me to start a vm without root.
     - The command to create a kvm on a block device
       #+BEGIN_SRC bash
-      # qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive file=tank/vm/prod-web-1,if=ide -machine pc,accel=kvm,iommu=on -cpu host -smp 4
+      # qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive file=tank/vm/prod-web-1,if=ide,media=disk,aio=threads -machine pc,accel=kvm,iommu=on -cpu host -smp 4 -m 8G,slots=2,maxmem=16G -name prod-web-1 -usb -nographics
+
+qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive file=tank/vm/prod-web-1,if=virtio,index=0,cach=none,format=raw -machine pc,accel=kvm,iommu=on -cpu host -smp 4 -m 8G,slots=2,maxmem=16G -name prod-web-1 -usb -nographics
+
+ 
       #+END_SRC
+    - Install libvirt to manage our kvms
+      - virt-manager or virsh commandline can be used to manage this.
+
+*** sys-process/audit
+    - References:
+      - http://people.redhat.com/sgrubb/audit/visualize/index.html
+    - TODO
+
+*** linuxcontainers
+    - Resources
+      - https://linuxcontainers.org/
+    - TODO:
+      - Is this something I might like to take advantage of in the future?
+*** OpenStack
+    - Cloud Concepts
+      - On demand
+        - A sence of immediate. No need to put in a request for permission.
+      - Elastic
+        - Grow and Shrink on demand
+      - Self Service
+        - Available through a service catalogue.
+        - No need for complicated configuraitons or programatic setups
+      - On-premis computing Service Stack
+        - On-premises data center management model
+          - Applicaitons
+          - Data
+          - Runtime
+          - Middleware
+          - O/S
+          - Virtualizaiton
+          - Servers
+          - Storage
+          - Networking
+        - Managed by the IT Department. Not self service.
+      - *-As-a-service
+        - Service :: in the cloud computing environment means
+          - used to describe control layers in the computing stack
+          - underlying services are abstracted
+          - Consumer does not need to worry about lower layers.
+          - Focus on making "agnostic" service layers
+        - IaaS :: Infrastructure-as-a-service
+          - most common *-As-a-service model
+          - Stack
+            - Consumer Controlled
+              - Applications
+              - Data
+              - Runtime
+              - Middleware
+              - O/S
+            - Service Provider Controlled
+              - Virtulization
+              - Servers
+              - Storage
+              - Networking
+          - Abstraction of hardware layers
+            - Business consumer requests guest resources
+          - No need to buy bare metal hardware
+            - on-demand growth or reduction
+        - PaaS :: Platform-as-a-service
+          - Stack
+            - Consumer Controlled
+              - Applications
+              - Data
+            - Service Provider Controlled
+              - Runtime
+              - Middleware
+              - O/S
+              - Virtualization
+              - Servers
+              - Storage
+              - Networking
+          - Further abstraction up to application layer
+            - Busniess consumer builds apps and manages data
+          - Platform agnostic deployments
+            - less time developing for rigit platforms
+        - AaaS :: Anything-as-a-service
+          - FWaaS :: Firewall-as-a-service
+          - DBaaS :: Database-as-a-service
+          - LBaaS :: Load balancing-as-a-service
+          - DaaS :: Desktop-as-a-service
+          - DRaaS :: Disaster recovery-as-a-service
+      - Public, Private and Hybrid Cloud
+        - Public Cloud :: Exposed to the internet
+        - Private Cloud :: On-premis cloud environment
+        - A Hybrid Cloud includes a vpn connecting the public and private cloud. The consumer then makes requests to the hybrid cloud and the resources are managed where they need to be i.e. in the public or in the private cloud. Also, resources can be moved from one environment to another as required.
+      - APIs & Software Abstraction Layer
+        - No need to install binary applications
+        - Common methods to access resources
+        - Open access regardless of platform
+        - No language restrictions
+        - REST :: Representational State Transfer
+        - North Bound and South Bound
+          - APIs exposed in two directions
+          - Service Consumers use Northbound APIs
+          - Southbound APIs allow for further abastraction into the hardware layers
+          - Allows for programmatic control of hardware and software
+          - Less regidity
+        - Layering and API Access
+          - Consumer makes api request northbound into the cloud. 
+          - The Restful service makes southbound API calls to the compute resources
+          - The Compute resources make southbound API calls to the storage resoruces
+      - Modulare Infrastructure
+        - Seperate Compute, Networking and Storage
+        - Underneath is the shared service layer
+        - Everything is accessed via an API
+      - Service Dependencies
+        - Host O/S
+        - Database Service
+          - MySQL is most common
+        - Message Queuing Service (MQ)
+          - Rabbid MQ (Common choice)
+        - L2/L3 Networking
+      - OpenStack Core Services
+        - Minimal Required Services
+          - An Identity Service Environment
+          - A Comput Service Environment
+          - An Image Service Environment (Virtual Machine Template Images)
+          - A Networking Service Environment
+        - Building OpenStack Core Services
+          1. Install Host OS
+          2. Install OpenStack Service Dependencies
+             - Message Queuing, Database Services required to operate the other core services and how they interact with eachother
+          3. Identity Environment
+             - Provides Authorization and Authentication for our OpenStack cloud
+          4. Compute Environment
+             - Runs the virtual machines
+          5. Image Environment
+             - Delivers images / templates for our virtual machines
+          6. Networking Environment
+             - Public, Private and Hybrid
+        - Dashboard
+          - Named Horizon
+          - Provides a web-based self-service portal to interact with underlying OpenStack services, such as launching an instance, assigning IP addresses and configuring access controls.
+        - Compute
+          - Named Nova
+          - Manages the lifecycle of compute instances in an OpenStack environment. Responsibilities include spawning, scheduling and decommissioning of virtual machines on demand.
+        - Networking
+          - Named Neutron
+          - Enables Network-Connectivity-as-a-Service for other OpenStack services, such as OpenStack Compute. Provides an API for users to define networks and the attachments into them. Has a pluggable architecture that supports many popular networking vendors and technologies.
+        - Storage
+          - Object Storage
+            - Named Swift
+            - Stores and retrieves arbitrary unstructured data objects via a RESTful, HTTP based API. It is highly fault tolerant with its data replication and scale-out architecture. Its implementation is not like a file server with mountable directories. In this case, it writes objects and files to multiple drives, ensuring the data is replicated across a server cluster.
+          - Block Storage
+            - Named Cinder
+            - Provides persistent block storage to running instances. Its pluggable driver architecture facilitates the creation and management of block storage devices.
+        - Shared Services
+          - The Identity Service
+            - Named Keystone
+            - Authentication
+              - Identifies who you are
+            - Authorization
+              - Determines if you are allowed to do what you requested to do.
+            - Includes:
+              - Users
+              - Services measured for different authorization and authentication requirements
+              - Provides a catalogue of end points for all OpenStack Services
+            - Uses tokens to authenticate and maintain session state.
+            - Workflow
+              - Tenants
+                - ************ GO BACK AND FILL THIS IN>>>
+          - The Image Service
+            - Named Glance
+            - Stores and retrieves virtual machine disk images. OpenStack Compute makes use of this during instance provisioning.
+          - Telemetry
+            - Named Ceilometer
+            - Monitors and meters the OpenStack cloud for billing, benchmarking, scalability, and statistical purposes.
+        - Higher Level Services
+          - Orchastration
+            - Named Heat
+            - Orchestrates multiple composite cloud applications by using either the native HOT template format or the AWS CloudFormation template format, through both an OpenStack-native REST API and a CloudFormation-compatible Query API.
+    - Archetecture
+      - Comput Resource Design
+        - overcommit ratio :: the ratio of available virtual resources to available physical resources. This ratio is configurable for CPU and memory. The default CPU overcommit ratio is 16:1, and the default memory overcommit ratio is 1.5:1
+      - Network Resource Design
+        - Network resources are devided into segments. Each segment provides access to particular resources.
+        - PLan for either a physical or logical seperation of network segments used by operators and tenants.
+        - Additional network segments may be added to provide access to internal services such as the message bus and database used by various services. 
+        - The network services require network communcation paths which should also be seperated from the other networks.
+        - Segregating these services into different networks helps to protect sensitive data and protects against unauthorized access to services.
+        - Neutron gives full control over the creation of virtual network resources to tenants.
+        - Tunneling protocols are used to establish encapsulated communication paths over existing network infrastructure in order to segment tenant traffic.
+          - It is common to tunnel over GRE and encapsulate with VXLAN and VLAN tags.
+        - Three recommended Network Segments
+          1. Public Network Segment: Used to access REST APIs by tenants and operators
+             - Controller nodes and Swift proxies are the only devices connected to this segment.
+             - Optionally serviced by hardware load balancers.
+          2. Hardware Administration Segment:
+             - Used by admins to administer the hardware
+             - Configuration management tools use this segment to deploy software and services onto new hardware.
+             - Communicates with every hardware node
+             - Optionaly also used for internal services such as providing access to the message bus and database services
+             - This segment must be properly secured.
+          3. Application Network Segment:
+             - Provides applications access to physical network and allows consumers to connect with appliations.
+             - Compute resource nodes and network gateway services which allow application data to access the physical network from outside of the cloud must have access to this segment.
+      - Object Storage Design
+        - When designing hardware resources for storage the primary goal is to maximize storage in each resource node and keep the cost per terabyte to a minimum.
+          - Often involved utilizing servers that can hold a large number of spinning disks.
+          - Options include using 2u servers with directly attached storage or external chasis with a large number of drives.
+          - The Swift Ring has the ablity to assign weights to drives allowing for the use of a wide range of drive technology. Take advantage of this by always purchasing the cheapest storage options at the time, then add an appropriate weight to the new drives so that their use is appropriately balanced.
+      - Block Storage Design
+        - It is recommended to create multiple storage pools of different types so that tenants can choose the an appropriate storage solution that meets the neads of their application.
+        - It is possible to provide tenants with a large catalogue of storage services with a variety of performance levels and redundancy options.
+      - Recommended Core Services
+        - Compute, Networking, Image Service, Identity, Dashboard, Telemetry module.
+        - Consider also including: Object Storage (swift) and Block Storage (cinder)
+      - Supplemental Software
+        - Includes databases and message queues, and may also involve software to provide high availability of the OpenStack environment. 
+        - Design decisions around the underlying message queue might affect the required number of controller services, as well as the technology to provide highly resilient database functionality, such as MariaDB with Galera.
+        - HAProxy is a software load balancer. It provides highly avaiable API access and SSL termination.
+        - High Availability
+          - Software with requirements such as HAProxy must be made highly available.
+          - Keepalived or Pacemaker with Corosync provides high availability.
+          - Pacemaker and Corosync can provide active-active or active-passive highly available configuration depending on the specific service in the OpenStack environment.
+          - Assumes a two node controller infrastructure where one node may be running certain services in standby mode.
+        - Aleviate load to the Identity Service
+          - Memcached is a distributed memory object system.
+            - used to cache tokens
+            - Can help aleviate some bottle necks in the underlying authentication system.
+          - Redis is a key-value store.
+          - Deploy Redis and Memcache onto the infrastructure nodes providing OpenStack Services.
+      - Controller Infrastructure Nodes
+        - Provides management services for the end user.
+        - Provides internal services for operating the cloud.
+        - Run message queueing services that carry system messages between each services.
+        - Performance
+          - Performance issues in the message bus would lead to delays sending messages where they need to go.
+            - This condition will cause delays in operation functions such as spinning up and deleting instances, provisioning new storage volumes and managing network resources.
+            - Also advesly affects auto-scaling features.
+            - Therefore it is important to design the hardware used to run the controller infrastructure as outlined above in the Hardware Selection section.
+          - Issues can arrise serving concurrent users. Ensure that the APIs and Horizon services are load tested to ensure that you are able to serve your customers
+            - Particular attention should be given to the Identity Service which provides authentication and authorization for all services both internally and to the end-user.
+            - If the Identity Service is not sized appropriately it can lead to a degradation of overall performance.
+      - Network Performance
+        - It is possible to provide a mix of networking capabilities by utilizing different network interface speeds.
+        - Performance can be boosted significantly with hardware load balancers.
+        - hardware load balancers can also perform SSL termination.
+        - It is important to understand the SSL offloading capabilities of the devices selected.
+      - Compute Host
+        - Performance is primarly affected by choice of hardware specifications for the compute nodes including CPU, Memory and disk type.
+        - The overcommit ration applied to resources also has an impact on performance. The default is 16:1 of the CPU and 1.5 of the Memory.
+        - Overcommit rations that are too high lead to a condition known as "noisy-neighbour".
+        - It is fine to stick with the defaults, but be sure to monitor the environment as its usage increases for the noisy-neighbour activity.
+      - Storage Performance
+        - Block Storage
+          - Hardware specification is an important factor for performance.
+            - Can use enterprise storage solutions such as NetApp or EMC
+            - Can use scale out storage such as GlusterFS or Ceph.
+            - Can use directly attached storage to the nodes themselves.
+          - Block Storage can be deployed so that traffic traverses the host network.
+            - In this case the front side API traffic performance could adversly affect block storage performance.
+            - Consider using a dedicated data storage network with dedicated interfaces on the Controller and Compute Hosts.
+        - Object Storage performance is affected by a number of design choices.
+          - User access to Object Storage is through the proxy services which site behind hardware load balancers.
+          - Data replication affects performance.
+          - 10 GbE or better networking is recommended throughout storage networking architecture.
+      - Availability
+        - 
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
-  -  xfreerdp /v:2ua4041FTF.lan.local /u:trevor.wilson@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:trevor.wilson /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
+  -  xfreerdp /v:computername.lan.local /u:username@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:username /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
 * TODO
   - [0/0] Install Cron    
   - [0/4] Things to Schedual with Cron
