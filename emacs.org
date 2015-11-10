@@ -315,6 +315,15 @@
    - https://github.com/OmniSharp/omnisharp-emacs :: project URI with great documentation
    - omnisharp-build-in-emacs :: builds the solution in emacs. Requires omni-sharp-mode
 
+* Email with Gnus
+  - C-h i m gnus :: manual on gnus
+  - C-h i m message :: manual for messages. This is where you will find how to send email
+  - Attach multiple files:
+    - 4 C-x d :: This opens up helm-dired mode. Navigate to desired directory.
+    - <enter> :: This opens up the directory with full dired-mode
+    - visit each file to be attached and type the m key. This will mark the file for an action.
+    - M-x gnus-dired-mode
+    - C-c <enter> C-a :: This will bring up a prompt in the mini-buffer asking where you would like to attach the files.
 * Pain Points
   - Windows
     - projectile-grep failing
