@@ -339,3 +339,6 @@
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
   [ ] Resolve key-binding conflict between ace-jump-mode and org-table-blank-field.
+* Jotted:
+- Must look into M-x customize-group. i.e. M-x customize-group rcirc
+- i'd start with M-: (info "(eintr)Top")
