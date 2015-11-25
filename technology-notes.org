@@ -277,6 +277,14 @@
     #+END_SRC
     - 
 
+*** Protocols
+    - LACP
+      - part of the IEEE specification 802.3ad
+      - Bundle several pysical ports to form a single logical channel
+    - VRRP
+      - Virtual Router Redundancy Protocol
+        - automatic assignment of available IP routers to participating hosts
+        - Increases availability and reliability of routing paths via atomic default gateway selections on IP subnetworks
 ** Profiling and Instrumentation
   - eBPF :: extended berkly packet filtering
     - Reference: http://www.brendangregg.com/blog/2015-05-15/ebpf-one-small-step.html
@@ -1204,6 +1212,8 @@ qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive
     - TODO:
       - Is this something I might like to take advantage of in the future?
 *** OpenStack
+    - Glossary
+      - SLA :: Service Level Agreement
     - Cloud Concepts
       - On demand
         - A sence of immediate. No need to put in a request for permission.
@@ -1301,6 +1311,7 @@ qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive
           - MySQL is most common
         - Message Queuing Service (MQ)
           - Rabbid MQ (Common choice)
+          - QPID
         - L2/L3 Networking
       - OpenStack Core Services
         - Minimal Required Services
@@ -1362,105 +1373,164 @@ qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive
             - Named Heat
             - Orchestrates multiple composite cloud applications by using either the native HOT template format or the AWS CloudFormation template format, through both an OpenStack-native REST API and a CloudFormation-compatible Query API.
     - Archetecture
-      - Comput Resource Design
-        - overcommit ratio :: the ratio of available virtual resources to available physical resources. This ratio is configurable for CPU and memory. The default CPU overcommit ratio is 16:1, and the default memory overcommit ratio is 1.5:1
-      - Network Resource Design
-        - Network resources are devided into segments. Each segment provides access to particular resources.
-        - PLan for either a physical or logical seperation of network segments used by operators and tenants.
-        - Additional network segments may be added to provide access to internal services such as the message bus and database used by various services. 
-        - The network services require network communcation paths which should also be seperated from the other networks.
-        - Segregating these services into different networks helps to protect sensitive data and protects against unauthorized access to services.
-        - Neutron gives full control over the creation of virtual network resources to tenants.
-        - Tunneling protocols are used to establish encapsulated communication paths over existing network infrastructure in order to segment tenant traffic.
-          - It is common to tunnel over GRE and encapsulate with VXLAN and VLAN tags.
-        - Three recommended Network Segments
-          1. Public Network Segment: Used to access REST APIs by tenants and operators
-             - Controller nodes and Swift proxies are the only devices connected to this segment.
-             - Optionally serviced by hardware load balancers.
-          2. Hardware Administration Segment:
-             - Used by admins to administer the hardware
-             - Configuration management tools use this segment to deploy software and services onto new hardware.
-             - Communicates with every hardware node
-             - Optionaly also used for internal services such as providing access to the message bus and database services
-             - This segment must be properly secured.
-          3. Application Network Segment:
-             - Provides applications access to physical network and allows consumers to connect with appliations.
-             - Compute resource nodes and network gateway services which allow application data to access the physical network from outside of the cloud must have access to this segment.
-      - Object Storage Design
-        - When designing hardware resources for storage the primary goal is to maximize storage in each resource node and keep the cost per terabyte to a minimum.
-          - Often involved utilizing servers that can hold a large number of spinning disks.
-          - Options include using 2u servers with directly attached storage or external chasis with a large number of drives.
-          - The Swift Ring has the ablity to assign weights to drives allowing for the use of a wide range of drive technology. Take advantage of this by always purchasing the cheapest storage options at the time, then add an appropriate weight to the new drives so that their use is appropriately balanced.
-      - Block Storage Design
-        - It is recommended to create multiple storage pools of different types so that tenants can choose the an appropriate storage solution that meets the neads of their application.
-        - It is possible to provide tenants with a large catalogue of storage services with a variety of performance levels and redundancy options.
-      - Recommended Core Services
-        - Compute, Networking, Image Service, Identity, Dashboard, Telemetry module.
-        - Consider also including: Object Storage (swift) and Block Storage (cinder)
-      - Supplemental Software
-        - Includes databases and message queues, and may also involve software to provide high availability of the OpenStack environment. 
-        - Design decisions around the underlying message queue might affect the required number of controller services, as well as the technology to provide highly resilient database functionality, such as MariaDB with Galera.
-        - HAProxy is a software load balancer. It provides highly avaiable API access and SSL termination.
-        - High Availability
-          - Software with requirements such as HAProxy must be made highly available.
-          - Keepalived or Pacemaker with Corosync provides high availability.
-          - Pacemaker and Corosync can provide active-active or active-passive highly available configuration depending on the specific service in the OpenStack environment.
-          - Assumes a two node controller infrastructure where one node may be running certain services in standby mode.
-        - Aleviate load to the Identity Service
-          - Memcached is a distributed memory object system.
-            - used to cache tokens
-            - Can help aleviate some bottle necks in the underlying authentication system.
-          - Redis is a key-value store.
-          - Deploy Redis and Memcache onto the infrastructure nodes providing OpenStack Services.
-      - Controller Infrastructure Nodes
-        - Provides management services for the end user.
-        - Provides internal services for operating the cloud.
-        - Run message queueing services that carry system messages between each services.
-        - Performance
-          - Performance issues in the message bus would lead to delays sending messages where they need to go.
-            - This condition will cause delays in operation functions such as spinning up and deleting instances, provisioning new storage volumes and managing network resources.
-            - Also advesly affects auto-scaling features.
-            - Therefore it is important to design the hardware used to run the controller infrastructure as outlined above in the Hardware Selection section.
-          - Issues can arrise serving concurrent users. Ensure that the APIs and Horizon services are load tested to ensure that you are able to serve your customers
-            - Particular attention should be given to the Identity Service which provides authentication and authorization for all services both internally and to the end-user.
-            - If the Identity Service is not sized appropriately it can lead to a degradation of overall performance.
-      - Network Performance
-        - It is possible to provide a mix of networking capabilities by utilizing different network interface speeds.
-        - Performance can be boosted significantly with hardware load balancers.
-        - hardware load balancers can also perform SSL termination.
-        - It is important to understand the SSL offloading capabilities of the devices selected.
-      - Compute Host
-        - Performance is primarly affected by choice of hardware specifications for the compute nodes including CPU, Memory and disk type.
-        - The overcommit ration applied to resources also has an impact on performance. The default is 16:1 of the CPU and 1.5 of the Memory.
-        - Overcommit rations that are too high lead to a condition known as "noisy-neighbour".
-        - It is fine to stick with the defaults, but be sure to monitor the environment as its usage increases for the noisy-neighbour activity.
-      - Storage Performance
-        - Block Storage
-          - Hardware specification is an important factor for performance.
-            - Can use enterprise storage solutions such as NetApp or EMC
-            - Can use scale out storage such as GlusterFS or Ceph.
-            - Can use directly attached storage to the nodes themselves.
-          - Block Storage can be deployed so that traffic traverses the host network.
-            - In this case the front side API traffic performance could adversly affect block storage performance.
-            - Consider using a dedicated data storage network with dedicated interfaces on the Controller and Compute Hosts.
-        - Object Storage performance is affected by a number of design choices.
-          - User access to Object Storage is through the proxy services which site behind hardware load balancers.
-          - Data replication affects performance.
-          - 10 GbE or better networking is recommended throughout storage networking architecture.
-      - Availability
-        - 
+      - Technical Considerations
+        - Comput Resource Design
+          - overcommit ratio :: the ratio of available virtual resources to available physical resources. This ratio is configurable for CPU and memory. The default CPU overcommit ratio is 16:1, and the default memory overcommit ratio is 1.5:1
+        - Network Resource Design
+          - Network resources are devided into segments. Each segment provides access to particular resources.
+          - PLan for either a physical or logical seperation of network segments used by operators and tenants.
+          - Additional network segments may be added to provide access to internal services such as the message bus and database used by various services. 
+          - The network services require network communcation paths which should also be seperated from the other networks.
+          - Segregating these services into different networks helps to protect sensitive data and protects against unauthorized access to services.
+          - Neutron gives full control over the creation of virtual network resources to tenants.
+          - Tunneling protocols are used to establish encapsulated communication paths over existing network infrastructure in order to segment tenant traffic.
+            - It is common to tunnel over GRE and encapsulate with VXLAN and VLAN tags.
+          - Three recommended Network Segments
+            1. Public Network Segment: Used to access REST APIs by tenants and operators
+               - Controller nodes and Swift proxies are the only devices connected to this segment.
+               - Optionally serviced by hardware load balancers.
+            2. Hardware Administration Segment:
+               - Used by admins to administer the hardware
+               - Configuration management tools use this segment to deploy software and services onto new hardware.
+               - Communicates with every hardware node
+               - Optionaly also used for internal services such as providing access to the message bus and database services
+               - This segment must be properly secured.
+            3. Application Network Segment:
+               - Provides applications access to physical network and allows consumers to connect with appliations.
+               - Compute resource nodes and network gateway services which allow application data to access the physical network from outside of the cloud must have access to this segment.
+        - Object Storage Design
+          - When designing hardware resources for storage the primary goal is to maximize storage in each resource node and keep the cost per terabyte to a minimum.
+            - Often involved utilizing servers that can hold a large number of spinning disks.
+            - Options include using 2u servers with directly attached storage or external chasis with a large number of drives.
+            - The Swift Ring has the ablity to assign weights to drives allowing for the use of a wide range of drive technology. Take advantage of this by always purchasing the cheapest storage options at the time, then add an appropriate weight to the new drives so that their use is appropriately balanced.
+        - Block Storage Design
+          - It is recommended to create multiple storage pools of different types so that tenants can choose the an appropriate storage solution that meets the neads of their application.
+          - It is possible to provide tenants with a large catalogue of storage services with a variety of performance levels and redundancy options.
+        - Recommended Core Services
+          - Compute, Networking, Image Service, Identity, Dashboard, Telemetry module.
+          - Consider also including: Object Storage (swift) and Block Storage (cinder)
+        - Supplemental Software
+          - Includes databases and message queues, and may also involve software to provide high availability of the OpenStack environment. 
+          - Design decisions around the underlying message queue might affect the required number of controller services, as well as the technology to provide highly resilient database functionality, such as MariaDB with Galera.
+          - HAProxy is a software load balancer. It provides highly avaiable API access and SSL termination.
+          - High Availability
+            - Software with requirements such as HAProxy must be made highly available.
+            - Keepalived or Pacemaker with Corosync provides high availability.
+            - Pacemaker and Corosync can provide active-active or active-passive highly available configuration depending on the specific service in the OpenStack environment.
+            - Assumes a two node controller infrastructure where one node may be running certain services in standby mode.
+          - Aleviate load to the Identity Service
+            - Memcached is a distributed memory object system.
+              - used to cache tokens
+              - Can help aleviate some bottle necks in the underlying authentication system.
+            - Redis is a key-value store.
+            - Deploy Redis and Memcache onto the infrastructure nodes providing OpenStack Services.
+        - Controller Infrastructure Nodes
+          - Provides management services for the end user.
+          - Provides internal services for operating the cloud.
+          - Run message queueing services that carry system messages between each services.
+          - Performance
+            - Performance issues in the message bus would lead to delays sending messages where they need to go.
+              - This condition will cause delays in operation functions such as spinning up and deleting instances, provisioning new storage volumes and managing network resources.
+              - Also advesly affects auto-scaling features.
+              - Therefore it is important to design the hardware used to run the controller infrastructure as outlined above in the Hardware Selection section.
+            - Issues can arrise serving concurrent users. Ensure that the APIs and Horizon services are load tested to ensure that you are able to serve your customers
+              - Particular attention should be given to the Identity Service which provides authentication and authorization for all services both internally and to the end-user.
+              - If the Identity Service is not sized appropriately it can lead to a degradation of overall performance.
+        - Network Performance
+          - It is possible to provide a mix of networking capabilities by utilizing different network interface speeds.
+          - Performance can be boosted significantly with hardware load balancers.
+          - hardware load balancers can also perform SSL termination.
+          - It is important to understand the SSL offloading capabilities of the devices selected.
+        - Compute Host
+          - Performance is primarly affected by choice of hardware specifications for the compute nodes including CPU, Memory and disk type.
+          - The overcommit ration applied to resources also has an impact on performance. The default is 16:1 of the CPU and 1.5 of the Memory.
+          - Overcommit rations that are too high lead to a condition known as "noisy-neighbour".
+          - It is fine to stick with the defaults, but be sure to monitor the environment as its usage increases for the noisy-neighbour activity.
+        - Storage Performance
+          - Block Storage
+            - Hardware specification is an important factor for performance.
+              - Can use enterprise storage solutions such as NetApp or EMC
+              - Can use scale out storage such as GlusterFS or Ceph.
+              - Can use directly attached storage to the nodes themselves.
+            - Block Storage can be deployed so that traffic traverses the host network.
+              - In this case the front side API traffic performance could adversly affect block storage performance.
+              - Consider using a dedicated data storage network with dedicated interfaces on the Controller and Compute Hosts.
+          - Object Storage performance is affected by a number of design choices.
+            - User access to Object Storage is through the proxy services which site behind hardware load balancers.
+            - Data replication affects performance.
+            - 10 GbE or better networking is recommended throughout storage networking architecture.
+        - Availability
+          - Reference:
+            - http://docs.openstack.org/ha-guide/ :: Openstack High Availability Guide
+          - Design infrastructure so that no single point of failure exists.
+          - Should consider the number of switches, routes and power redundancy as well as the associated bonding of networking providing diverse routes to your highly available switch infrastructure.
+          - OpenStack services should be deployed accross multiple servers.
+          - It is expected that at least 2 servers be utilized.
+          - Monitoring and reporting and server utilization and response times, as well as load testing your system, will guide scale out decisions.
+          - Consider that legacy networking (nova-network) provides a feature that removes a single point of failure when it comes to routing. This feature has not yet been impelemnted in OpenStack Networking (neutron).
+            - i.e. Multi-host functionality restricts failure domains to the host running that instance.
+          - OpenStack Networking the controller servers or seperate networking hosts handle routing. This restriction can be removed by using 3rd party software that maintain highly available L3 routes.
+            - It is also possible to move routing to hardware routers and remove it from OpenStack Networking. The switching infrastructure must support L3 routing.
+          - If Compute hosts do not provide seemless live migration capability, then when the comput host fails, that instance and any data local to that instance will be deleted.
+            - Consider ways of eliminating any single point of failure when a comput host dissapears.
+              - Consider shared file system on Enterprise storage or OpenStack block storage.
+        - Security
+          - Reference
+            - http://docs.openstack.org/security-guide/ :: OpenStack Security Guide
+          - Security Domain comprise of users, applications, servers or networks that share common trust requirements and expectations
+          - Security Domains
+            - Public
+              - Entirely untrusted.
+              - Includes the internet as a whole and all networks for which you have no authority.
+            - Guest
+              - Handles compute data generated by instances on the clound.
+              - Does not handle data generated by services that support the operations of the cloud, such as API calls.
+              - If no stringent controls on instance use, or if unrestricted internet access to instances is allowed, then this domain should be considered untrusted.
+              - Private cloud providers may consider this network internal and therefore trusted only if they trust all of their tenants.
+            - Management
+              - Sometimes referred to as the control plane
+                Where services interact.
+              - The network transports confidential data such as configuration parameters, user names, passwords.
+              - This domain is normally considered trusted.              
+            - Data
+              - Primarly concerned with information pertaining to the storage services.
+              - Depending on type of deployment data crossing this network has high integrity, confidential requirements and may have high availability requirements.
+              - Trust level is highly dependant on type of deployment.
+          - May be mapped to OpenStack deployment individually or combined.
+          - Should be mapped based on deployment topology.
+          - Domains and trust requirements depend on whether the clound instance is Public, Private or hybrid.
+          - API services should be protected by SSL.
+      - Operational Considerations
+        - Expectations set by the Service Level Agreement (SLA) directly affect knowing when and where you should impemented redundancy and high availability
+        - SLA terms that affect design include:
+          - API availability guarantees implying multiple infrastructure services and highly available load balancers.
+          - Network uptime guarantees affecting switch design, which might require redundant switching and power.
+          - Factor in networking security policy requirements in to your deployments.
+        - Support and Maintainability
+          - Monitoring
+            - Specific meters that are critically important to monitor
+              - Image Disk Utilization
+              - Response time to Compute API
+            - It is recommended to leverage existing monitoring systems.
+          - Downtime
+            - Must create processes and architectures that support:
+              - Planned downtime (maintenance)
+              - Unplanned downtime (system-faults)
+            - To be dictated by the SLA
+          - Capacity Planning
+            - 
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:computername.lan.local /u:username@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:username /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
 * TODO
-  - [0/0] Install Cron    
-  - [0/4] Things to Schedual with Cron
-    - [ ] Schedual Zpool scrub
+  - [X] Install Cron    
+  - [2/4] Things to Schedual with Cron
+    - [X] Schedual Zpool scrub
     - [ ] Email reports of storage pool capacity monthly
-    - [ ] Schedual zfs snapshots
+    - [X] Schedual zfs snapshots
     - [ ] Schedual last snapshot of the night to be compressed, encrypted, and sent to remote storage.    
-  - [ ] Make a snapshot
-  - [ ] Enable compression
+  - [X] Make a snapshot
+  - [X] Enable compression
   - [ ] Do I need PAM? If not
     - [ ] If I need it then configure it.
     - [ ] If I don't, then remove it.
@@ -1481,3 +1551,35 @@ qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive
   - CONFIG_ZPOOL
     - What is zbud, zsmalloc
   - I was not able to find all the kernel config options. Must review PaX kernel config options more closely.
+- How can I resolve the issue that I am having with pinentry?? How should I build ncurses so that it plays nicely?? I have tried building it with tinfo with no luck. I have also tried building ncurses with .
+ * Found these USE flags for sys-libs/ncurses-5.9-r99:                                                                                                                                    
+
+$ equery u ncurses
+[ Legend : U - final flag setting for installation]
+[        : I - package is installed with flag     ]
+[ Colors : set, unset                             ]
+ * Found these USE flags for sys-libs/ncurses-5.9-r99:
+ U I
+ - - ada         : Add bindings for the ADA programming language
+ + + cxx         : Build support for C++ (bindings, extra libraries, code generation, ...)
+ - - gpm         : Add support for sys-libs/gpm (Console-based mouse driver)
+ - - static-libs : Build static versions of dynamic libraries as well
+ - - tinfo       : Build curses library (libncurses) sep from the low-level terminfo library (libtinfo) -- usually needed only for binary packages -- but it
+                   is binary compatible in either mode 
+ + + unicode     : Add support for Unicode
+
+
+$ equery u pinentry
+[ Legend : U - final flag setting for installation]
+[        : I - package is installed with flag     ]
+[ Colors : set, unset                             ]
+ * Found these USE flags for app-crypt/pinentry-0.9.5:
+ U I
+ - - caps          : Use Linux capabilities library to control privilege
+ - - clipboard     : Enable clipboard integration
+ + + emacs         : Add support for GNU Emacs
+ - - gnome-keyring : Enable support for storing passwords via gnome-keyring
+ - - gtk           : Add support for x11-libs/gtk+ (The GIMP Toolkit)
+ + + ncurses       : Add ncurses support (console display library)
+ - - qt4           : Add support for the Qt GUI/Application Toolkit version 4.x
+ - - static        : !!do not set this during bootstrap!! Causes binaries to be statically linked instead of dynamically

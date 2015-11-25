@@ -25,7 +25,9 @@
 - C-h i :: runs the command info
   - m :: Pick menu item specified by name
   - C-h f info-mode :: documents a list of all commands for this mode
-
+- M-x customize-group <group-name/> :: lists all variables for a group and their current settings.
+* Trouble Shooting and Debugging
+  - C-h i m eintr :: info for error codes
 * Key-bindings
 - C-g :: Cancel whatever command was pending
 - M-x :: Displays a meta prompt in the Mini-buffer for running emacs commands
@@ -339,6 +341,7 @@
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs
   [ ] Resolve key-binding conflict between ace-jump-mode and org-table-blank-field.
+  [ ] Install the cli version of pinentry to resolve login issue.
+  [ ] Check out emacs-ide http://emacs-ide.tuxfamily.org/
 * Jotted:
 - Must look into M-x customize-group. i.e. M-x customize-group rcirc
-- i'd start with M-: (info "(eintr)Top")
