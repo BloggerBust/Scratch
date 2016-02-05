@@ -178,7 +178,7 @@
     - git tag 0.0.1 :: Should be the same version as entered in bower.json "version" property
     - git push --tags
  3. Now visit github, click on the project and then click on the release link to view the release.
-
+    
 * Linux
 - Getting help:
   - =# equery f iproute2 | egrep '/usr/share/(man|doc)/'= :: Will list all help docs that reference.
@@ -203,6 +203,8 @@
    - dmidecode -t 0 :: Bios info
    - dmidecode -t 4 :: Processor info
    - dmidecode -t 11 :: Original Equipment Manufacturer (OEM) info
+** Variables
+   - $_ :: recalls the last argument
 ** I/O Stream Numbers
    | Handle | Name   | Description     |
    |      0 | stdin  | Standard input  |
@@ -243,6 +245,40 @@
   7. The boot process will continue as normal.
 ** Networking
 - iproute2 is now default over ifconfig for network configuraiton, routing and tunneling
+*** Routing
+    - All IP networking is a permutation of three fundemental concepts of reachability:
+      1. The IP Address is reachable on the machine itself.
+         - Known as scope host.
+         - used for IPs bound to any network device, including loop-back devices and the network range for the loop-back device.
+         - Addresses of this nature are called local IPs or locally hosted IPs
+      2. The IP address is reachable on the directly connected link layer medium.
+         - Addresses of this type are called locally reachable or directly reachable IPs.
+      3. The IP address is ultimately reachable through a router which is reachable on a directly connected link layer medium.
+         - This class of IP addresses is only reachable through a gateway.
+    - General IP Networking Terminology
+      - Classess Inter-Domain Routing (CIDR), supernetting
+      - Octet :: A single number between 0 and 255, hexadecimal 0x00 and 0xff.
+        - An octet is a single byte in size.
+        - examples: 140, 255, 0, 7
+      - IP Address, IP :: A locally unique 4 octet logical identifier which a machine can use for communication using the IP protocol.
+        - The address is determined by combining the network address and the host address.
+        - The IP Address is a unique number identifying a host on a network.
+        - examples: 192.168.99.35, 140.71.38.7, 205.254.86.91
+      - Host Address Portion :: The right most bits (frequently octets) in an IP Address which are not part of the network address. The part of an IP address which identifies the computer on a network independent of the network.
+        - examples: the portion within the curly braces - 192.168.1.{27}/24, 10.{10.17.24}/8, 172.20.{158.75}/16
+      - network address, network, network prefix, subnetwork address :: A four octet address and network mask identifying the usable range of IP addresses.
+        - Conventional and CIDR notations combine the four bare octets with the netmask or prefix length to define this address.
+        - Briefly a network address is the first address in a range and is reserved to identify the entire network.
+        - examples: 192.168.187.0/24, 205.254.211.192/26, 4.20.17.128/255.255.255.248, 10.0.0.0/255.0.0.0, 12.35.17.112/28.
+      - Network mask, netmask, network bitmask :: A four-octet set of bits which, when AND'd with a particular IP Address produces the Network Address.
+        - Combined with a network address or IP Address, the netmask identifies the range of IP addresses which are directly reachable.
+        - examples: 255.255.255.0, 255.255.0.0, 255.255.192.0, 255.255.255.224, 255.0.0.0.
+      - Prefix length :: An alternate representation of netmask, this is a single integer between 0 and 32, identifying the number of significant bits in an IP Address or Network Address.
+        - This is the "slash-number" component of a CIDR address.
+        - Examples: 4.20.17.0/24, 66.14.17.116/30, 10.158.42.72/29, 10.48.7.198/9, 192.168.154.64/26.
+      - broadcast Address :: a four-octet address derived from an OR operation between the Host Address Portion of a Network Address and the full broadcast special 255.255.255.255.
+        - The broadcast is the highest allowable address in a given network and is reserved for broadcast traffic.
+        - Examples: 192.168.205.255/24, 172.18.255.255/16, 12.7.149.63/26.
 *** Virtual Network Interface
     - References:
       - https://wiki.gentoo.org/wiki/QEMU_with_Open_vSwitch_network
@@ -1552,7 +1588,8 @@ qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive
     - What is zbud, zsmalloc
   - I was not able to find all the kernel config options. Must review PaX kernel config options more closely.
 - How can I resolve the issue that I am having with pinentry?? How should I build ncurses so that it plays nicely?? I have tried building it with tinfo with no luck. I have also tried building ncurses with .
- * Found these USE flags for sys-libs/ncurses-5.9-r99:                                                                                                                                    
+  - This seems to be related: https://lists.gnu.org/archive/html/tramp-devel/2008-02/msg00025.html
+  - Found these USE flags for sys-libs/ncurses-5.9-r99:                                                                                                                                    
 
 $ equery u ncurses
 [ Legend : U - final flag setting for installation]
