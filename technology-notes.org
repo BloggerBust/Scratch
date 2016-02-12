@@ -244,7 +244,33 @@
   6. Lastly the initramfs init script will call /sbin/init (the init script on the real root file system)
   7. The boot process will continue as normal.
 ** Networking
-- iproute2 is now default over ifconfig for network configuraiton, routing and tunneling
+ - iproute2 is now default over ifconfig for network configuraiton, routing and tunneling
+ - Open Systems Interconnection model (OSI model) :: https://en.wikipedia.org/wiki/OSI_model
+ - Ethernet
+   - conceptually behaves like a single bus that each of the network hosts connect to. In reality each host connects directly to a switch.
+   - Ethernet occupies the second layer known as the data link layer. You will also here terms such as:
+     - local network
+     - layer 2
+     - L2
+     - link layer
+   - Ethernet network hosts communicate by exchanging Frames.
+   - Every host on an ethernet network is identified by an address called the Media Access Control (MAC) address.
+   - Every host can send a frame directlyto every other host
+   - A host can broadcast a frame to every other host on the same network at once by sending it to the broadcast MAC address
+   - ARP and DHCP use ethernet broadcasts.
+   - Sometimes ethernet is referred to as broadcast domain.
+   - When a NIC recieves a frame it checks to see if the destination MAC address matches its MAC address or the broadcast MAC address. If not, then it discards it.
+   - Promiscuous Mode configures a NIC to pass all frames to the operating system regardless of their MAC address.
+ - MAC address
+   - 48 bits
+   - typically represented as a hexidecimal string.
+   - ff:ff:ff:ff:ff:ff :: The broadcast MAC address
+ - Network switch
+   - Used to connect hosts on an ethernet
+   - When a NIC recieves a Frame for a particular destination MAC address for the first time it does not know which port is connected to the destination host so it broadcasts the frame. If the destination host acknowledges the frame then the switch records the port for that MAC address in a table called the Forwarding Information Base (FIB). For future Frames the switch can look up the correct port in the FIB and send the frames direction
+   - Switches can be daisy-chained. All hosts connected to these switches will be on a single ethernet.
+ - Forwarding Information Base :: a table of MAC address to switch ports
+ - VLANS
 *** Routing
     - All IP networking is a permutation of three fundemental concepts of reachability:
       1. The IP Address is reachable on the machine itself.
@@ -1563,6 +1589,10 @@ qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive
             - To be dictated by the SLA
           - Capacity Planning
             - 
+    - Networking
+      - Every virtual machine instance has a unique MAC address which is different from the MAC of the compute host.
+      - Compute Host must alter the default behavior of NICs because they may recieve frames with destination MAC addresses that match an instance.
+        - The appropriate NICs can be configured for promiscuous mode to resolve this issue.
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:computername.lan.local /u:username@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:username /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
