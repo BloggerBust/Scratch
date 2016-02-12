@@ -279,6 +279,14 @@
       - broadcast Address :: a four-octet address derived from an OR operation between the Host Address Portion of a Network Address and the full broadcast special 255.255.255.255.
         - The broadcast is the highest allowable address in a given network and is reserved for broadcast traffic.
         - Examples: 192.168.205.255/24, 172.18.255.255/16, 12.7.149.63/26.
+      - Router :: Any machine which will accept and forward packets between two networks
+    - Any IP address is defined by two sets of numbers: Network Address and Netmask.
+    - There are two ways to express an IP address:
+      - Netmask Notation: 4-octet-address/Netmask
+      - CIDR Notation: 4-octet-address/Prefix length
+    - Commands
+      - ip route show table tablename :: view the routing entries of table named tablename
+      - ip route show table all :: list all routing entries of all tables
 *** Virtual Network Interface
     - References:
       - https://wiki.gentoo.org/wiki/QEMU_with_Open_vSwitch_network
