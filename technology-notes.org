@@ -271,6 +271,62 @@
    - Switches can be daisy-chained. All hosts connected to these switches will be on a single ethernet.
  - Forwarding Information Base :: a table of MAC address to switch ports
  - VLANS
+   - Enables a single switch to act as multiple independant switches.
+   - Two hosts on the same switch, but on different VLANs do not see each others traffic.
+   - Each VLAN has an associated ID. VLAN15 refers to the VLAN with ID 15.
+   - The switch is responsible for ensuring that traffic is isolated accross VLAN's
+   - A port that has been configured to serve traffic to a particular VLAN is called an Access Port.
+   - If two switches are configured for VLAN's and are daisy-chained, then the ports for cross-connecting the switches must ben configured to allow ethernet frames from any VLAN to be forwarded to the other switch.
+     - The sending switch must tag each ethernet frame with the VLAN ID so that the recieving switch can ensure that the frame is forwarded to the correct VLAN and only the correct VLAN.
+   - Trunk Port :: A switch port that is configured to tag and forward ethernet frames for all VLANs.
+   - IEEE 802.1Q :: The network standards that describes how VLAN tags are encoded in eithernet frames when trunking is being used.
+ - Subnets and ARP
+   - While NICs use MAC addresses to address hosts, TCP/IP uses IP Addresses to address hosts.
+   - The address resolution protocol (ARP) bridges the gap between ethernet and IP by translating IP addresses into MAC addresses.
+   - IP addresses have two parts, a network address and a host address.
+   - Two hosts are on the same Subnet if they have the same Network Address
+   - Two hosts can communicate directly over ethernet if they are on the same local network.
+   - ARP treats all hosts in the same subnet as being on the same local network.
+   - A netmask specifies how many bits of a 32-bit IP address make up the network address.
+     - Since there are 8 bits in each of the 4 octets of an IP address the following network addresses can be derived:
+       - 192.168.75.22/24  --> 192.168.75.0
+       - 192.168.75.22/16 --> 192.168.0.0
+       - 192.168.75.22/8 --> 192.0.0.0
+   - Creating CIDR subnets including a multicast address or a loopback address cannot be used in an OpenStack environment
+     - multicast addresses are in the range 224.0.0.0 through 239.255.255.255.
+   - arp -n :: view ARP cache.
+   - An ARP Request of Host A sending a message to Host B looks like:
+     Host A --> To: everybody (ff:ff:ff:ff:ff:ff). I am looking for the computer who has IP address 192.168.1.7. Signed: MAC address fc:99:47:49:d4:a0.
+     Host B --> To: fc:99:47:49:d4:a0. I have IP address 192.168.1.7. Signed: MAC address 54:78:1a:86:00:a5.
+     Host A then sends Ethernet frames to host B.
+   - Commands:
+     - $ Arping :: sends an arp command.
+     - $ Arp -n :: view the arp cache.
+ - Dynamic Host Configuration Protocol (DHCP)
+   - DHCP Server :: The system that assigns IP addresses to network hosts
+   - DHCP Clients ::  Network hosts that receive IP addresses from a DHCP Server.
+   - The interaction between client and server:     
+     - The client sends a UDP discover request from port 68 to 255.255.255.255 port 67 --> (“I’m a client at MAC address 08:00:27:b9:88:74, I need an IP address”)
+     - The server sends a UDP offer request from port 67 to port 68 on the client. --> (“OK 08:00:27:b9:88:74, I’m offering IP address 10.10.0.112”)
+     - The client sends a request (“Server 10.10.0.131, I would like to have IP 10.10.0.112”)
+     - The server sends an acknowledgement (“OK 08:00:27:b9:88:74, IP 10.10.0.112 is yours”)
+   - Due to the discovery taking advantage of the broadcast address, a DHCP server must be on the same local network as a DHCP client.
+   - OpenStack uses dnsmasq as the DHCP server.
+   - Troubleshooting tip:
+     - dnsmasq writes to syslog. When an instance is not reachable over a network check the log that all 4 steps of the DHCP protocol have been satisfied.
+ - Internet Protocol IP
+   - Specifies how to route packets between hosts on different local networks.
+   - Relies on special networked hosts called Routers or Gateways.
+   - Router :: A host connected to at least 2 local networks with an IP address for each local network it is connected to. A router can forward IP packets from one local network to another.
+   - Layer 3 (L3) of the OSI model also known as the Network Layer.
+   - Every network device has a routing table
+   - The routing table maintains a list of subnets for each local network the host is directly connected to
+   - The routing table maintains a list of routers that are on local networks that the host is directly connected to.
+   - A host sending a packet to an IP address consults its routing table. 
+     - If the destination host is on the local network, the data is delivered to the destination host.
+     - If the destination host is on a remote network, the data is forwarded to a local gateway.
+   - A DHCP server typically transmits the IP address of the default gateway to the DHCP client along with the client’s IP address and a netmask
+ - TCP/UDP/ICMP
 *** Routing
     - All IP networking is a permutation of three fundemental concepts of reachability:
       1. The IP Address is reachable on the machine itself.
@@ -1593,6 +1649,10 @@ qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive
       - Every virtual machine instance has a unique MAC address which is different from the MAC of the compute host.
       - Compute Host must alter the default behavior of NICs because they may recieve frames with destination MAC addresses that match an instance.
         - The appropriate NICs can be configured for promiscuous mode to resolve this issue.
+      - VLANs
+        - OpenStack can use VLAN's to isolate the traffic of different tenants.
+        - If using VLAN for tennant isolation then all switchports must be configured as trunk-ports.
+        - It is important to select a VLAN range that the infrastructure is not using. I.E. if the infrastructure is to support 100 projects, then select VLAN range outside of that value such as 200-299. All physical infrastructure (and openstack) that handles tenant networks must support this range.
 ** xfreerdp
   - As of version 1.2.1 it fails to connect frequently and when it does it does not does maintain a stable connection.
   -  xfreerdp /v:computername.lan.local /u:username@lan.local /p:\!foo /g:tsgateway.lan /gd:lan /gu:username /gp:\!foo /gateway-usage-method:direct /cert-ignore +auto-reconnect
