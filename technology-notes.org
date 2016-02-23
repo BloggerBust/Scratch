@@ -327,6 +327,96 @@
      - If the destination host is on a remote network, the data is forwarded to a local gateway.
    - A DHCP server typically transmits the IP address of the default gateway to the DHCP client along with the client’s IP address and a netmask
  - TCP/UDP/ICMP
+   - User Datagram Protocol (UDP)
+     - Another L4 protocol
+     - Connectionless protocol
+       - No connection required for two applications to exchange data
+     - Unreliable protocol
+       - The OS does not attempt to detect lost packets
+       - Order is not gauranteed
+     - Uses ports to distinguish between different applications running on the same system.
+       - UDP ports are independant of TCP ports.
+     - Examples of UDP based protocols: DHCP, Domain Name System (DNS), Network Time Protocol (NTP), Virtual Extensible Local Area Network (VxLan)
+     - Supports one to many communication
+     - An application can send a UDP packet to a set of receivers using IP multicast (i.e. VXLAN uses IP multicast)
+       - All involved routers must be configured to support IP multicast
+     - Internet Control Message Protocol is a protocol for sending messages over an IP network.
+       - ping and mtr both use ICMP.
+ - Network Components
+   - Switches :: used to connect devices on a network.
+     - Operate at L2
+     - Forward packets on to other devices
+     - Pass data on only to devices that need to receive it.
+   - Routers :: A network devices that connects multiple networks together
+     - Are connected to two or more networks
+     - Use routing table to determine which network to pass received packets to
+   - Firewalls :: A network devices that controls the incomming and outgoing network traffic based on applied rules
+   - Loadbalancer :: A network device that distributes network or application traffic accross a number of servers.
+ - Tunnel Technologies
+   - Allows a network protocol to encapsulate a payload protocol such that packets from the payload protocol are passed as data
+   - Generic Routing Encapsulation
+     - transmits IP packets with private IP addresses over the internet using delivery packets with public IP addresses
+   - Virtual Extensible Local Area Network (VXLAN)
+     - Encapsulates L2-ethernet frames over L4-UDP packates
+     - Allows the creation of a logical network for virtual machines accross various networks.
+ - Namespaces
+   - Creates a scope identifier
+   - Linux provices namespaces for networking and processes
+   - Process Namespace
+     - If a process is running within a process namespace then it can only detect and interact with other processes running within the same namespace
+   - Network Namespace     
+     - Scope identifier are network devices
+       - eth0 would be in a particular namespace
+       - There is a default namespace that all things are in if not explicitly declared to be in a different namespace.
+     - Each namespace has its own routing table
+       - A routing table is keyed by destination IP address.
+       - Namespaces allow the same destination IP to have different routing rules from one namespace to another
+       - This is how OpenStack is able to have a feature that allows overlapping IP addresses in different virtual networks.
+     - Each namespace has its own IPTables
+       - Allows for different security rules from one namespace to the next.
+     - IP netns exec NETNS COMMAND
+       - runs a command in the namespace NETNS
+       - IP netns exec NETNS ping A.B.C.D will cause IP A.B.C.D to be looked up in the routing table scoped by NETNS and that will determine what network device the message is ultimately transmitted to.
+ - Virtual Routing and Forwarding (VRF)
+   - Allows multiple instances of a routing table to coexist on a single router.
+   - It is another name for Network Namespace
+ - Network Address Translation (NAT)
+   - a method for modifying the source or destination IP address in the header of an IP-packet in transit
+   - Neither the sender, nor the receiver are aware that the IP-packet headers are being manipulated
+   - iptables provides NAT functionality
+   - There are multiple variations of NAT
+     - SNAT :: Source Network Address Translation
+       - The NAT router modifies the IP-packet header sender address
+       - Commonly used to enable hosts with private IP addresses to communicate with servers on a public network such as the internet.
+       - Consider the senario where a user wants to access a website on the ineternet from a system with a private IP address.
+         - If the request contains packet headers with a private source address then the webserver will not be able to send the response back to the sender.
+         - SNAT solves the problem by modifying the source address to an IP address that is routable on the public internet.
+         - There are different variations of SNAT
+         - In the case of OpenStack SNAT
+           - a NAT router between the sender and receiver replaces the source IP address in the IP-packet header with the router's public IP address.
+           - modifies the source TCP or UDP port value
+           - maintains a table of the source's true IP and port to the modified IP and port
+           - When the router receives a packet destined to the modified IP and port, it translates the IP-packet header destination address and port to the corresponding private IP and port listed in the table and then forwards it.
+           - This form of SNAT is sometimes refered to as Port Address Translation (PAT) or NAT overload.
+           - OpenStack uses SNAT to allow applications running inside of instances to communicate out to the internet.
+     - DNAT :: Destination Network Address Translation
+       - The NAT router modifies the destination IP address in the header of an IP-packet in transit
+       - OpenStack uses DNAT to route packets from applications running inside of instances to the OpenStack metadata-service.
+       - Applications running inside of instances access the meta-data service by sending REST requests to IP address 169.254.169.254.
+       - OpenStack uses DNAT to change the destination IP address from 169.254.169.254 to the IP address of the meta-data service
+     - One-to-one NAT
+       - maintains a one-to-one mapping between public and private IP addresses
+       - OpenStack uses this to implement floating IP addresses       
+ - Private Addresses
+   - RFC 1918 :: https://tools.ietf.org/html/rfc1918
+   - Reserves 3 subnets for private IPs
+     - 10.0.0.0/8
+     - 172.16.0.0/12
+     - 192.168.0.0/16
+   - Link-local 
+     - 169.254.0.0/16
+     - Used between two hosts on a single link when no IP address is specified.
+     - Valid for communication within the network segmant (link) or broadcast domain that the host is connected to.
 *** Routing
     - All IP networking is a permutation of three fundemental concepts of reachability:
       1. The IP Address is reachable on the machine itself.
@@ -369,6 +459,83 @@
     - Commands
       - ip route show table tablename :: view the routing entries of table named tablename
       - ip route show table all :: list all routing entries of all tables
+*** OpenStack Networking (Neutron)
+    - Overview and Components
+      - OpenStack networking facilitates the creation and management of network object (networks, subnets, ports etc) which other OpenStack services can use.
+      - Plug-ins are used to accomadate different networking devices.
+      - Neutron provides an API that allows for the defining of network connectivity and addressing.
+      - Neutron provides an API manage a variety of network services such as:
+        - L3 forwarding
+        - NAT
+        - Load balancing
+        - perimiter firewalls
+        - VPNs
+      - Neutron includes the following components
+        - API Server
+          - Supports L2 networking and IP Address Management (IPAM)
+          - Extension for L3 router construct that enables routing between L2 networks and gateways to external networks
+          - A growing list of plug-ins that enable interoperability with various networking technologies including: routers, switches, virtual switches, Software Defined Networking (SDN) controllers. 
+        - OpenStack Networking plug-in and Agents
+          - Plug-ins and unplugs ports, creates networks or subnets, provides IP addressing
+          - The chosen plug-in and agent differ depending on the vendor and technologies used
+          - Only one plug-in can be used at a time.                        
+        - Messaging Queue
+          - Accepts and routes RPC requests between agents and to complete API operations
+          - Used by the ML2 plug-in for RPC between neutron server and neutron agents that run on each hypervisor
+    - Concepts
+      - You can create networks and subnets and instruct OpenStack services like Compute to attach virtual devices to ports on these networks.
+      - OpenStack compute uses Neutron to provide connectivity for its instances
+      - Tennants can have multiple private networks, choose their own addressing scheme independantly of other tenants.
+      - Two types of networks:
+        - Tenant
+          - Used for connectivity within projects
+          - By default they are fully isolated and not shared with other projects.
+          - The following types of network isolation and overlay technologies are supported:
+            - FLAT
+              - All instances reside on the same network. This may include the hosts.
+              - No VLAN tagging or network segregation takes place                
+            - VLAN
+              - Allows users to create multiple provider or tenant networks using VLAN IDs (802.1Q tagged) that correspond the VLANs present in the physical network
+              - Instances can communicate accross the environment
+              - Instances can communicate with dedicated servers, firewalls, load balancers and other networking infrastructure on the same layer 2 VLAN                
+            - GRE & VXLAN
+              - Encapsulation protocols that create overlay networks to activate and control communication between Compute instances
+              - A networking router is required to allow traffic to flow outside of a GRE or VXLAN tenant network
+              - A networking router is required to connect direct-connected tenant networks with external networks, including the internet.
+              - A networking router is required to support ONE-to-one NAT floating IP addresses allowing the ability to connect to instances directly from an external network.
+        - Provider
+          - Creaated by an admin
+          - Map to existing physical networks in the data centre.
+          - Flat and VLAN make useful provider networks.
+          - You can create networks and subnets and instruct OpenStack services like Compute to request to be connected to these networks by requesting virtual ports
+          - Tennants can have multiple private networks, choose their own addressing scheme independantly of other tenants.
+      - Subnets
+        - A block of IP addresses known as native IPAM (IP Address Management)
+        - Used to allocate IP addresses when new ports are created on a network
+      - Ports
+        - A connection point for attaching a single device to a virtual network
+        - Describes the associated networking configuration, MAC and IP addresses to be used on that port
+      - Routers
+        - Forwards data-packets between networks
+        - Provides L3 and NAT forwarding to provide external network access for VMs on tenant networks.
+        - Required by certain plug-ins only
+      - Security Groups
+        - Acts as a virtual firewall for compute instances controlling inbound and outbound traffic.
+        - Act at the port level (not subnet level)
+        - Each network has a default security group
+          - drops all ingress and allows all egress
+          - Rules can be added to to this group
+        - A container for security group rules
+        - Groups and group rules give admins and tenants the ability to sepcify the type of traffic and direction that is allowed to pass through a port.
+        - Ports are associated with a security group at creation time.
+      - Extensions
+        - Serve two purposes
+          - Allow the introduction of new features to the API without requiring a version change
+          - Allow the introduction of vendor specific functionality
+          - Applications can list all available extensions by performing a GET /extensions request.
+          - Extensions available in one API might not be available in another.
+    - Service & Component Heirarchy
+      - 
 *** Virtual Network Interface
     - References:
       - https://wiki.gentoo.org/wiki/QEMU_with_Open_vSwitch_network
