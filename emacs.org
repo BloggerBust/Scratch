@@ -94,10 +94,23 @@
                  - ? :: brings up help on all commands available for managing bookmarks.
 
 ** Window
-   - C-x 0 :: Delete window leaving the buffer.
-   - C-x 1 :: merge all frames
    - C-x 3 :: split frame vertically
    - C-x 2 :: split frame horizontally
+   - Delete bindings:
+     - space occupied by a deleted window is given to adjacent window.
+     - Deleting a window does not delete the buffer.
+     - C-x 0 :: Delete the selected window (delete-window). 
+     - C-x 1 :: Delete all windows in the selected frame except the selected window (delete-other-windows). 
+     - C-x 4 0 :: Delete the selected window and kill the buffer that was showing in it (kill-buffer-and-window). The last character in this key sequence is a zero. 
+     - C-x 4 0 :: (kill-buffer-and-window) kills the current buffer and then deletes the selected window.
+     - C-x 1 :: (delete-other-windows) deletes all the windows except the selected one (and the minibuffer). the selected window expands to use the whole frame except for the echo area. 
+   - Resize bindings:
+     - If this makes any window too small, it is deleted and its space is given to an adjacent window. The minimum size is specified by the variables window-min-height and window-min-width. 
+     - C-x ^ :: Make selected window taller (enlarge-window). 
+     - C-x } :: Make selected window wider (enlarge-window-horizontally). 
+     - C-x { :: Make selected window narrower (shrink-window-horizontally). 
+     - C-x - :: Shrink this window if its buffer doesn't need so many lines (shrink-window-if-larger-than-buffer). 
+     - C-x + :: Make all windows the same height (balance-windows). 
 
 ** kill-ring
    - C-k :: yank from the point to the end of current line into the kill ring
@@ -138,6 +151,7 @@
     - (define-key) :: adds to minor-mode keymap
   - mode-line :: Displayed at bottom of buffer in parenthesis. First item is the majore mode. Other items are minore modes.
   - M-x mode-name :: Toggles mode on or off.
+  - M-x visual-line-mode :: wrap by word
 ** Dired mode.
    - C-x d :: activates dired mode
    - q :: quit
@@ -207,11 +221,13 @@
 
 *** Tables
     - C-c | :: Turn a region into a table
+    - "|-"<tab> :: makes horizontal row seperator
     - M-<right> :: moves current column to the right.
     - M-<left> :: moves current column to the left.
     - M-<up> :: moves current row up.
     - M-<down> :: moves current row down.
     - Shift Prefix causes inserts instead of moves.
+    - C-c } :: toggles row and column numbers
 *** TODOs
     - C-c C-t :: Creates a TODO. This must be on a heading. Alternatively to add a todo you simply type TODO after heading markup.
     - C-c C-c :: Add a tag. Tags are actually created for header nodes, but TODOs are a type of header node so you can tag them.
@@ -236,13 +252,22 @@
    - provides auto-completion for M-x     
 ** helm-descbinds, then when you
    press F1 or C-h there (in the middle of a command) and it lists the bindings and their commands you can choose one and actually run it instead of having to retype the keysequence.
-* custom-configuration
+* customize
 - ~/.emacs.d/init.el :: emacs initialization file
-- M-x package-list-packages :: Fetches the latest package meta-data.
-- M-x package-install <name-of-package> :: installs the named package
 - M-x <name-of-theme> :: activates theme
-- M-x visual-line-mode :: wrap by word
-
+- Faces  
+  - Method 1 - Go directly to group
+    - M-x Custommize-group
+    - type the name of the group you want to customize. i.e. magit-faces
+  - Method 2 - using font under point
+    - C-u C-x = :: provides detailed info about the character at point and the cursor position. Use this to look up what face is applied and other font properties.
+    - Under the heading - There are text properties here
+      - If there is a face then it will be labled face and display the name of the face as a link. Put cursor over name of face and hit enter
+      - This will bring up the prpoerties for the face. Review over the current properties.
+      - Place cursor over the link named customize this face and hit enter
+    
+- M-x customize :: creates a customization buffer
+       
 * packages
   - saveplace :: saves the point on exiting buffer
     - configuration
@@ -257,6 +282,10 @@
     - https://github.com/magnars/multiple-cursors.el
   - Expand-region :: increase selected region by semantic units
     - https://github.com/magnars/expand-region.el
+** Search and Install
+   - M-x package-list-packages :: Fetches the latest package meta-data.
+   - M-x package-install <name-of-package> :: installs the named package
+     - My preference now is to add packages to cask and use pallet to update
 ** packages to install
 - M-x package-install browse-kill-ring :: M-x browse-kill-ring opens a buffer that contains everything in the kill ring. Also includes numerouse other browse-kill-ring functions.
 - M-x package-install ido-flex :: fuzzy ido-mode pattern matching. https://github.com/lewang/flx
@@ -285,10 +314,17 @@
        - $ cask :: this will download and install all of the dependencies.
      - Packages are stored in ~/.emacs.d/.cask/{version}/
      - cask update :: updates all of the packages.
+** Pallet
+   - maintains entries in cask file automatically
+   - M-x pallet-update :: updates installed packages
+   - M-x pallet-install :: installs packages from cask file
+
 * Shells and Terms
 ** Ansi-term
    - C-c C-j :: switch to line mode
    - C-c C-k ::: switch to char mode
+** comint
+   - for interacting with an inferior interpreter. For more info C-h f comint-mode
 * Using emacs as a terminal multi-plexer
   - M-x server-start :: turns any emacs session into a server
   - emacs --daemon :: starts emacs as a background daemon. This 
@@ -326,6 +362,22 @@
     - visit each file to be attached and type the m key. This will mark the file for an action.
     - M-x gnus-dired-mode
     - C-c <enter> C-a :: This will bring up a prompt in the mini-buffer asking where you would like to attach the files.
+* magit
+  - merge conflict
+    - In the magit status page go to Unstaged changes
+    - All files that contain merge conflicts will be labled 'unmerged'.
+    - Place point on first item in conflict and type 'e'.
+    - magit-ediff is launched.
+    - Getting help
+      - ? :: brings up help pop-menu
+    - navigation
+      - n :: moves to next conflict
+      - p :: moves to previous conflict
+    - Conflict resolution
+      - a :: choose side A or the left hand side
+      - b :: choose side B or the right hand side
+    - When you begin you will need to advance to the first conflict.
+    - Apparently you are supposed to be able to jump to C buffer and edit it directly, but I have found that this leaves things in a broken state where ediff stops listening to the key bindings. I can nolonger navigate using n and p for example. I need to find a resolution for this. I wll add this to pain points.
 * Pain Points
   - Windows
     - projectile-grep failing
@@ -337,6 +389,9 @@
     - How to cp the file associated with the current buffer to a new path?
     - How to mv the file associated with the current buffer to a new path?
     - How to quickly create additional scratch buffers named *sratch-n* | n > 1
+  - Magit
+    - magit-ediff
+      - editing buffer c directly leaves mgit-ediff in a broken state where it stops listening to the key bindings. I can nolonger navigate with n and p for example.
 * TODO [/] Work emacs init.el
   [ ] Install helm package
   [ ] Install omnisharp https://github.com/OmniSharp/omnisharp-emacs

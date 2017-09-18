@@ -1,0 +1,197 @@
+* Angular JS
+** Isolate Scope
+- Local Scope Properties: Used to allow information flow between isolate and parent scope. Note that the alternate name option applies to all local scope properties, but is only illustrated with the @ below.
+  - @: one-way binding of string values
+    - directive usage:
+      scope: {
+    name: '@'
+    value: '@someOtherAttrName'
+    }
+    - consumer usage:
+    <div my-isolate-scope-with-name name: '{{customer.name}}' someOtherAttrName='{{constomer.value}}'></div>
+  - =: two-way binding of objects
+    - directive usage:
+   scope: {
+   customer: '='    
+   },
+    template: '<ul><li ng-repeat="prop in customer">{{prop}}</li></ul>
+    - consumer usage:
+      <div my-isolate-scope-with-model customer="customer"></div>
+  - &: function binding for call-backs
+    - directive usage:
+      scope{
+      action:'&'
+      }
+    - consumer usage:
+      <div my-isolate-scope-with-function action="doStuff()" />
+** Migrating AngularJS 1.x to Angular 2+
+*** Main Topics Covered
+**** Components
+**** Bootstrapping
+**** TypeScript and ES6
+**** Using Classes in Angular 1
+*** Reasons to Migrate
+    - Angular 2+ is much faster and simpler
+    - Supports:
+      - Lazy Loading
+      - Server-side rendering
+      - Multiple Rendering Targets
+*** Preperation
+    - Preparing your code
+      - Primer
+        - Directives
+          - There are three types of Directives in boty AngularJS and Angular
+            - Component
+              - Represented by an Element
+                - Restrict set to 'E'
+              - Has a template
+              - Should use an isolate scope
+              - Most common
+            - Decorator
+              - Represented by an Attribute
+                - Restrict set to 'A'
+              - No Template
+              - Should use Shared Scope
+              - Typically use the link function for manipulating the DOM
+              - Uncommon                
+            - Structural
+              - Add / remove nodes from DOM
+              - ng-repeat, ng-if, ng-switch are examples
+              - Almost never used
+        - Angular 1 to 2 Mapping
+          | Angular 1           | Upgradeable     | Angular 2+ | Downgradeable | Description                                            |
+          | Controllers         | Yes (converted) | Component  | Yes           | Encapsulates html / logic                              |
+          | Component Directive | Yes             | Component  | Yes           | Encapsulates html / logic                              |
+          | Services            | Yes (formated)  | Services   | Yes           | Exactly what you think it is / reusable business logic |
+          | Decorator Directive | No              | Directives | No            | Give DOM element more functionality                    |
+          | Filters             | No              | Pipes      | No            | Format, filter, sort etc.                              |
+        - Upgrade / Downgrade
+          - By using the migration adapter things can be migrated one at a time without duplication while keeping the whole app functional
+          - Angular 1.x things can be used by Angular 2+ things by going through an upgrade process
+          - Angular 2 things can be used by angular 1.x things by going through a downgrade process
+          - No code changes to be upgraded / downgraded by the adapter
+          - Ownership of hibryd app
+            - The top most node is always Angular 1.x
+            - If Angular 2+ is used in Angular 1.x then the top evel dom element represeting the angular 2 component is scoped to angular 1.x.
+              - Directives applied to this top level element must be Angular 1.x
+              - Child nodes are scoped to Angular 2+
+                - Directives applied to this node must be Angular 2+
+              - vice versa
+          - Upgradeability
+            - Controllers must be converted to Component Directives to be Upgradable
+            - Services must be formatted a certain way to be upgradeable
+            - Decorator Directives cannot be upgraded. must be re-written as Angular 2+ Directives
+            - Filters cannot be upgraded. Must be re-written as Angular 2+ Pipes
+          - Change Detection
+            - In Angular 1.x this is known as a digest
+            - An event such as a click event in Angular 1.x will fire a change detection and then that will propogate to a change detection in Angular 2+ and vice versa
+            - There is a performance cost to running two change detection strategies. So a fully upgraded app will perform better than a hybrid.
+            - Angular 1.x change detection (digest) wll always be the bottle neck. Angular 2+ is much faster.
+    - Angular 2+ migration plan
+      - Phase 1
+        - Make changes to existing code
+          1. Follow the style guide (google Angular Style Guide to find it)
+             - https://github.com/johnpapa/angular-styleguide
+             - During preperation we want to look at the angular 1 style guide mainly since we are still in angular 1.x
+               - The most important things to follow in the style guide are:
+                 - Single Responsibility
+                   - Every object should be in its own file
+                 - Controllers
+                   - Use Controller As View Syntax
+                   - Directive Controller
+                     - Goto each controller in the application one at a time
+                     - set controllerAs: '$ctrl' above the controller property
+                     - set bindToController: true
+                   - Stand alone Controller
+                     - Goto the routing for that controller
+                     - set controllerAs: '$ctrl' above the controller property
+                   - Remove $scope argument from controller function and replace any use of $scope with the this variable
+                   - Go into the template and append $ctrl to the beginging of any binding to the controller
+                 - Directives
+          2. Update to latest version of Angular 1.x
+             - must be at least Angular 1.3
+             - better to be upgraded to Angular 1.5+
+               - Angular 1.5 has features to make it easier to migrate to Angular 2+
+             - probably will be as simple as including the script to the latest version of angular.min.js and angular-route.min.js.
+             - Confirm that everything still works and that angular.version outputs the correct version in the browser console.
+          3. Use Angular 1.5+ Components for all new development during this phase
+             - 1.5 Components are a type of directive that has short hand notation for a directive that uses isolate scope.
+             - This step is optional unless the thing is a controller and you want to be able to use the upgrade process of the ng-upgrade component (migration adapter)
+             - Makes the process of migrating to Angular 2 in Phase 2 easier.
+          4. Switch existing controllers to components
+             - This step will help, but is not required
+             - Makes the process of migrating to Angular 2 in Phase 2 easier.
+          5. Remove incompatible features from directives
+             - Incompatible Features Include
+               - Compile property
+               - Terminal property
+               - Priority property
+               - Replace property
+          6. Switch Component Directives to the new 1.5x Components
+             - Open the directive file
+             - Replace directive function with component
+             - The second argument is not a function, it is just the object to return.
+             - Remove the restrict property. As a component directive it will be restricted to 'E' implicitly.
+             - Rename scope property to bindings
+             - Remove ControllerAs - unless you don't want to use default $ctrl
+             - Remove bindToController - unless you don't want to use default $ctrl
+             - Open up template and make sure that it is using the correct accessor. If you removed ControllerAs and bindToController then that means that the accessor should be the default which is $ctrl.
+          7. Implement manual bootstrapping
+             - Required to migrate to angular 2 and to run a hubrid application.
+          8. Add TypeScript & a Build
+             - Javascript will go through a build step before running in the browser
+          9. Start using ES6
+          10. Switch Controllers to ES6 Classes
+              - If we switched stand alone controllers to components, then those components which are really like a type of directive, will have controllers. We can now switch those Component Controllers to ES6 Classes
+              - If we have any stand alone controllers that we never wanted to turn into components for some reason then we should switch those to ES6 Classes.
+          11. Switch Services to ES6 Classes
+      - Karma Unit Tests
+        - change $controller to $componentController
+        - The $componentController adds a new parameter. The second parameter is the arguments for the controller as before. The new third parameter is the bindings for the component.
+      - Phase 2
+        1. Add Angular 2+ to the build
+        2. Migrate 1 thing at a time to Angular 2
+           - If we migrate something like a Filter which cannot be upgraded, and it is needed in both Angular 1 and Angular 2 then in those cases we will need to create a Pipe which duplicates the object until the filter is no longer needed by the Angular 1.x code and can then be removed.
+    - Adding AngularJS 1.5 Components (Step 3 / 4 of migration plan)
+      - Step 3: Doing all new development with components
+      - Step 4: Switching controllers to components
+        - Rename the file where the ctrl lives by dropping the Ctrl postfix
+        - Open the file and change the controller method to component.
+        - Rename the first parameter, the name of the component, by dropping the Ctrl postfix
+        - The second parameter is currently a function, but the component is expecting an object.
+          - Add a few lines above the current second parameter (an object)
+          - In the space create a json object
+            {
+              templateUrl: 'path/nameOfTemplate.html',
+              bindings: {},
+              controller: function(){
+                // the controller code goes here...
+              }
+            }
+              
+          - The bindings property works just like the angular controller scope property.
+          - The controller property should be assigned to the function argument that used to be the second argument for the controller.
+        - Update the script reference to refer to the newly named component file
+        - Update the routing
+          - Remove the specification for the controller, since it is not a component and not a controller
+          - Remove the TemplateUrl property since that is now part of the definition of the component.
+          - Add a property called template. The template is for the top level element of the component. Recall that components are restricted to elements. In the simplest case the template property can simply equal the html element for the component wrapped in quotes.
+          - Remove the controllerAs property. It nolonger applies to the route since this is a route for a component now. Since $Ctrl is the default ControllerAs variable we do not need it, but if we wanted to have a different variable then we would need to add the controllerAs property as a property of the second argument of the component itself.
+          - If a resolve property is being used to inject a property into the controller it must be changed as this is not possible with components.
+            - The injected property must be removed from the controller. Let's call that property myResolveable
+            - myResolveable should be added to the bindings property using two-way binding i.e. myResolveable: '='
+            - In the route template add an attribute named my-resolveable to the components element and set it to equal "$resolve.myResolveable". The attribute property is the same as the property in bindings, unless you override the name, but with html case and the $resolve property that it is set to is the same property found in the resolve property of the route defenition.
+              #+BEGIN_SRC 
+              .when('/path/myComponent', {
+                template: '<my-component my-resolveable="$resolve.myResolveable"></my-component>',
+                resolve: {
+                  myResolveable: routeResolvers.myResolveable
+                }
+              })
+              #+END_SRC
+            - Since myResolveable is now a property in the bindings and not injected in the defenition of the controller it must now be accessed using the this accessor. So everywhere it is used add the this accessor.
+              
+    - Preparing Directives and Bootstrapping
+    - Adding Typescript and ES6
+    - Using ES6
+    - Switching to Classes

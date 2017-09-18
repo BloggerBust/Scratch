@@ -3,6 +3,9 @@
 ** npm
    - node package-manager
    - npm help <command> :: brings up help documentation on the specified command
+   - npm init :: interactivly creates package.json file
+   - npm install <package> --save :: installs the package to the project and saves the dependency in the package.json file
+   - npm install <package> -g :: save it globally. This allows the package to be run directly from the commandline as apposed to via node
 ** Node Modules
 *** Bower
   - Install: $npm install -g bower
@@ -55,7 +58,37 @@
     - It will then ask if it can register the package with bower.herokuapp.com.
 *** nodemon
     - Run a node application reloads modified files on the fly.
-    - usage :: $ nodemon main-file.js
+    - usage :: $ nodemon main-file.js         
+*** gulp
+    - install
+      - first install globally and then install locally with dev dependency
+      - npm install gulp -g
+      - npm install gulp --save-dev
+    - gulpfile.js :: gulp expects this file to exist as the main entry point
+    - Simple gulp example to monitor for code changes
+      #+BEGIN_SRC javascript
+      var gulp = require('gulp'),
+      nodemon = require('gulp-nodemon');
+      
+      //create the default task and use it to construct nodemon
+      gulp.task('default', function(){
+        nodemon({
+          script: 'app.js', //what is it going to run
+          ext: 'js', //what file  extensions to monitor for changes
+          env: {
+            PORT: 8000 //sets the process.env.PORT
+          },
+          ignore: [
+            './node_modules/**' //ignore everything under node_modules. That is what the double ** means.
+            ]
+        })
+        .on('restart', function(){
+          console.log('we have restarted');
+        });
+      });
+      #+END_SRC 
+*** gulp-nodemon
+    - a nodemon plugin for gulp
 *** Stylus
     - A CSS preprocessor
     - styl :: file extension
@@ -66,15 +99,57 @@
   - // :: a single line comment
 *** toastr
 *** ExpressJS
+    - Steps to setup express server
+      #+BEGIN_SRC javascript
+      var express = require('express')
+      var app = express(); // construct an express server instance
+      var port = process.env.PORT || 3000; //use the environment port if it is defined, otherwise default to port 3000
+      // setup a route handler
+      app.get('/', function(req, res){
+        req.send('welcome to my API'); //write a message back to the requester
+      });
+
+      //listen on the port for requests
+      app.listen(port, function(){
+        console.log('listening on port ' + port + '...');
+      });
+      #+END_SRC
+    - node <server-file> :: Start an node express app
+    - Setup routes
+      - app.get can be used to setup simple routes
+      - express.Router() can be used to setup more advanced routes.
+        - The following snippet creates the endpoint /api/books
+        #+BEGIN_SRC javascript
+        //setup route handler
+        var bookRouter = express.Router();
+
+        //setup the routes
+        bookRouter.route('/Books')
+        .get(function(req, res){
+          var data = {hello: 'This is my API'};
+          res.json(data);
+        });
+
+        app.use('/api/', bookRouter);
+        #+END_SRC
 *** Morgan
     - Http request logger middleware
 *** Body-parser
     - Body parser middleware
 *** Mongoose
-  - Fascilitates implementation of mongo-db in node applications
-  - makes implementation of mongo much easier.
-  - works off of schemas. Since mongo-db is a schema list document database, implementing schemas with mongoose is often seen as a bad idea.
+    - API docs :: http://mongoosejs.com/docs/api.html
+    - Similar to an ORM
+    - Install
+      - npm install mongoose --save
+    - Fascilitates implementation of mongo-db in node applications
+    - makes implementation of mongo much easier.
+    - works off of schemas. Since mongo-db is a schema-less document database, implementing schemas with mongoose is often seen as a bad idea.
     
+    - mongoose.connect :: opens connection, if it does not exist then it will be created
+      - mongoose.connect('mongodb://<host>/<data-base>');
+    - <model>.find(function(err, list<item>) :: find all records for a model
+    - <model>.find(query, function(err, list<item>) :: find all records for a model filtered by query. Query can come from req.query.
+    - <model>.findById(req.params.<routeId>, function(err, <item>)
 * Angular JS
 ** Isolate Scope
 - Local Scope Properties: Used to allow information flow between isolate and parent scope. Note that the alternate name option applies to all local scope properties, but is only illustrated with the @ below.
@@ -101,6 +176,177 @@
       }
     - consumer usage:
       <div my-isolate-scope-with-function action="doStuff()" />
+** Migrating AngularJS 1.x to Angular 2+
+*** Main Topics Covered
+**** Components
+**** Bootstrapping
+**** TypeScript and ES6
+**** Using Classes in Angular 1
+*** Reasons to Migrate
+    - Angular 2+ is much faster and simpler
+    - Supports:
+      - Lazy Loading
+      - Server-side rendering
+      - Multiple Rendering Targets
+*** Preperation
+    - Preparing your code
+      - Primer
+        - Directives
+          - There are three types of Directives in boty AngularJS and Angular
+            - Component
+              - Represented by an Element
+                - Restrict set to 'E'
+              - Has a template
+              - Should use an isolate scope
+              - Most common
+            - Decorator
+              - Represented by an Attribute
+                - Restrict set to 'A'
+              - No Template
+              - Should use Shared Scope
+              - Typically use the link function for manipulating the DOM
+              - Uncommon                
+            - Structural
+              - Add / remove nodes from DOM
+              - ng-repeat, ng-if, ng-switch are examples
+              - Almost never used
+        - Angular 1 to 2 Mapping
+          | Angular 1           | Upgradeable     | Angular 2+ | Downgradeable | Description                                            |
+          | Controllers         | Yes (converted) | Component  | Yes           | Encapsulates html / logic                              |
+          | Component Directive | Yes             | Component  | Yes           | Encapsulates html / logic                              |
+          | Services            | Yes (formated)  | Services   | Yes           | Exactly what you think it is / reusable business logic |
+          | Decorator Directive | No              | Directives | No            | Give DOM element more functionality                    |
+          | Filters             | No              | Pipes      | No            | Format, filter, sort etc.                              |
+        - Upgrade / Downgrade
+          - By using the migration adapter things can be migrated one at a time without duplication while keeping the whole app functional
+          - Angular 1.x things can be used by Angular 2+ things by going through an upgrade process
+          - Angular 2 things can be used by angular 1.x things by going through a downgrade process
+          - No code changes to be upgraded / downgraded by the adapter
+          - Ownership of hibryd app
+            - The top most node is always Angular 1.x
+            - If Angular 2+ is used in Angular 1.x then the top evel dom element represeting the angular 2 component is scoped to angular 1.x.
+              - Directives applied to this top level element must be Angular 1.x
+              - Child nodes are scoped to Angular 2+
+                - Directives applied to this node must be Angular 2+
+              - vice versa
+          - Upgradeability
+            - Controllers must be converted to Component Directives to be Upgradable
+            - Services must be formatted a certain way to be upgradeable
+            - Decorator Directives cannot be upgraded. must be re-written as Angular 2+ Directives
+            - Filters cannot be upgraded. Must be re-written as Angular 2+ Pipes
+          - Change Detection
+            - In Angular 1.x this is known as a digest
+            - An event such as a click event in Angular 1.x will fire a change detection and then that will propogate to a change detection in Angular 2+ and vice versa
+            - There is a performance cost to running two change detection strategies. So a fully upgraded app will perform better than a hybrid.
+            - Angular 1.x change detection (digest) wll always be the bottle neck. Angular 2+ is much faster.
+    - Angular 2+ migration plan
+      - Phase 1
+        - Make changes to existing code
+          1. Follow the style guide (google Angular Style Guide to find it)
+             - https://github.com/johnpapa/angular-styleguide
+             - During preperation we want to look at the angular 1 style guide mainly since we are still in angular 1.x
+               - The most important things to follow in the style guide are:
+                 - Single Responsibility
+                   - Every object should be in its own file
+                 - Controllers
+                   - Use Controller As View Syntax
+                   - Directive Controller
+                     - Goto each controller in the application one at a time
+                     - set controllerAs: '$ctrl' above the controller property
+                     - set bindToController: true
+                   - Stand alone Controller
+                     - Goto the routing for that controller
+                     - set controllerAs: '$ctrl' above the controller property
+                   - Remove $scope argument from controller function and replace any use of $scope with the this variable
+                   - Go into the template and append $ctrl to the beginging of any binding to the controller
+                 - Directives
+          2. Update to latest version of Angular 1.x
+             - must be at least Angular 1.3
+             - better to be upgraded to Angular 1.5+
+               - Angular 1.5 has features to make it easier to migrate to Angular 2+
+             - probably will be as simple as including the script to the latest version of angular.min.js and angular-route.min.js.
+             - Confirm that everything still works and that angular.version outputs the correct version in the browser console.
+          3. Use Angular 1.5+ Components for all new development during this phase
+             - 1.5 Components are a type of directive that has short hand notation for a directive that uses isolate scope.
+             - This step is optional unless the thing is a controller and you want to be able to use the upgrade process of the ng-upgrade component (migration adapter)
+             - Makes the process of migrating to Angular 2 in Phase 2 easier.
+          4. Switch existing controllers to components
+             - This step will help, but is not required
+             - Makes the process of migrating to Angular 2 in Phase 2 easier.
+          5. Remove incompatible features from directives
+             - Incompatible Features Include
+               - Compile property
+               - Terminal property
+               - Priority property
+               - Replace property
+          6. Switch Component Directives to the new 1.5x Components
+             - Open the directive file
+             - Replace directive function with component
+             - The second argument is not a function, it is just the object to return.
+             - Remove the restrict property. As a component directive it will be restricted to 'E' implicitly.
+             - Rename scope property to bindings
+             - Remove ControllerAs - unless you don't want to use default $ctrl
+             - Remove bindToController - unless you don't want to use default $ctrl
+             - Open up template and make sure that it is using the correct accessor. If you removed ControllerAs and bindToController then that means that the accessor should be the default which is $ctrl.
+          7. Implement manual bootstrapping
+             - Required to migrate to angular 2 and to run a hubrid application.
+          8. Add TypeScript & a Build
+             - Javascript will go through a build step before running in the browser
+          9. Start using ES6
+          10. Switch Controllers to ES6 Classes
+              - If we switched stand alone controllers to components, then those components which are really like a type of directive, will have controllers. We can now switch those Component Controllers to ES6 Classes
+              - If we have any stand alone controllers that we never wanted to turn into components for some reason then we should switch those to ES6 Classes.
+          11. Switch Services to ES6 Classes
+      - Karma Unit Tests
+        - change $controller to $componentController
+        - The $componentController adds a new parameter. The second parameter is the arguments for the controller as before. The new third parameter is the bindings for the component.
+      - Phase 2
+        1. Add Angular 2+ to the build
+        2. Migrate 1 thing at a time to Angular 2
+           - If we migrate something like a Filter which cannot be upgraded, and it is needed in both Angular 1 and Angular 2 then in those cases we will need to create a Pipe which duplicates the object until the filter is no longer needed by the Angular 1.x code and can then be removed.
+    - Adding AngularJS 1.5 Components (Step 3 / 4 of migration plan)
+      - Step 3: Doing all new development with components
+      - Step 4: Switching controllers to components
+        - Rename the file where the ctrl lives by dropping the Ctrl postfix
+        - Open the file and change the controller method to component.
+        - Rename the first parameter, the name of the component, by dropping the Ctrl postfix
+        - The second parameter is currently a function, but the component is expecting an object.
+          - Add a few lines above the current second parameter (an object)
+          - In the space create a json object
+            {
+              templateUrl: 'path/nameOfTemplate.html',
+              bindings: {},
+              controller: function(){
+                // the controller code goes here...
+              }
+            }
+              
+          - The bindings property works just like the angular controller scope property.
+          - The controller property should be assigned to the function argument that used to be the second argument for the controller.
+        - Update the script reference to refer to the newly named component file
+        - Update the routing
+          - Remove the specification for the controller, since it is not a component and not a controller
+          - Remove the TemplateUrl property since that is now part of the definition of the component.
+          - Add a property called template. The template is for the top level element of the component. Recall that components are restricted to elements. In the simplest case the template property can simply equal the html element for the component wrapped in quotes.
+          - Remove the controllerAs property. It nolonger applies to the route since this is a route for a component now. Since $Ctrl is the default ControllerAs variable we do not need it, but if we wanted to have a different variable then we would need to add the controllerAs property as a property of the second argument of the component itself.
+          - If a resolve property is being used to inject a property into the controller it must be changed as this is not possible with components.
+            - The injected property must be removed from the controller. Let's call that property myResolveable
+            - myResolveable should be added to the bindings property using two-way binding i.e. myResolveable: '='
+            - In the route template add an attribute named my-resolveable to the components element and set it to equal "$resolve.myResolveable". The attribute property is the same as the property in bindings, unless you override the name, but with html case and the $resolve property that it is set to is the same property found in the resolve property of the route defenition.
+              #+BEGIN_SRC 
+              .when('/path/myComponent', {
+                template: '<my-component my-resolveable="$resolve.myResolveable"></my-component>',
+                resolve: {
+                  myResolveable: routeResolvers.myResolveable
+                }
+              })
+              #+END_SRC
+            - Since myResolveable is now a property in the bindings and not injected in the defenition of the controller it must now be accessed using the this accessor. So everywhere it is used add the this accessor.
+              
+    - Preparing Directives and Bootstrapping
+    - Adding Typescript and ES6
+    - Using ES6
+    - Switching to Classes
 * Mongo-db
   - A schema list document database
   - No schema to define.
@@ -122,22 +368,24 @@
     + Mongod
       - The daemon.
       - Default Port: 27017
-      - mongod help :: help documentation for commandline options
+      - mongod help :: help documentation for commandline options      
     + Mongos
       - The sharding server.
   - Mongo Client
     - mongo :: starts the client
+      - if running from emacs -nw then use commit-run to run client. Otherwise you will have problems with buffer.
     - help :: brings up client help documentation
     - exit :: quits the client
     - show dbs :: lists existing dbs
-    - db :: shows the current database
-    - use foo :: switches to database few and creates it if it does not exist.
-    - db.getMongo() :: returns host and port for that server instance.
+    - db :: shows the current database. If no database was specified then you will be on the test database.
+    - use foo :: switches to database foo and creates it if it does not exist.
+    - db.getMongo() :: returns host and port for that server instance.   
   - Replica Sets
     - Advantages :: scalability and automatic recovery.
     - Types :: Primary, Secondary, Arbiter
     - Primary
-      - One and only primary instance. 
+      - One and only primary instance.
+      - read/write
     - Secondary
       - Readonly
       - one to many
@@ -153,10 +401,673 @@
       - Each mongo server requires its own db directory. i.e. db{1,2,3}
       - Each mongo server must run on a different port
       - mongod --dbpath ./db{n} --port unique_port_num --replSet "<replicaSetName>"
+      - The mongoShell is a javascript interpreter
+      - connect to one of the instances and create the replicaSet javascript object:
+        - > var replicaSetConf = {id='demo', members: [
+          {_id:0, host: 'localhost:30000', priority: 10}, //high priority ensures this will become the primary
+          {_id:1, host: 'localhost:40000'}, //no priority ensures this will become a secondary
+          {_id:2, host: 'localhost:50000', arbiterOnly=true}] //this will become the arbiter
+        - > rs.initiate(replicaSetConf)
+        - demo:PRIMARY> //The prompt will change to replicaSetName:Type>
+      - Cannot begin to read from secondary replicaset unless you issue the db.setSlaveOk()
+    - Shell
+      - A javascript interpreter
+        - Supports scripting in javascript
+      - useful for admin tasks
+      - Spelunk data
+      - fix or modify documents
+      - Inspect mongod health
+      - Single Command
+        - mongo host/dbname --eval "db.runCommand({logRotate:1}" :: the --eval flag evaluates a javascript argument and prevents an interactive shell
+      - run from script
+        - create a javascript file with the script you wish to run.
+        - mongo host nameOfScript.js :: Also prevents interactive shell from running.
+        - mongo host nameOfScript.js --shell :: Remains in interactive shell after running script.
+      - Some admin tasks
+        - mongo localhost/admin --eval "db.runCommand({logRotate:1})" :: configures mongo to rotate log file
+        - use printjson to print out json results
+          - mongo localhost/admin --eval "printjson(db.runCommand({logRotate:1}))" :: prints the result in json format
+        - Can override database commands
+          - DB.prototype.dropDatabase = function(){ print("Don't do it man!");}
+            db.dropDatabase = DB.prototype.dropDatabase;
+          - Now I can stick that in a script i.e. safter.js and then run it creating a shell that won't let me accidentally drop a database while I am working in there.
+            - mongo safer.js --shell
+        - mongo shell has special keybindings. Read about them in the man page. 
+        - Edit a multiline function
+          #+BEGIN_SRC javascript
+          myFunc = function(x) //defines a new function
+          edit myFunc //This will open the editor defined by environment variable EDITOR. Make changes and save.
+          myFunc() //executes the newly modified function
+          #+END_SRC
+        - pwd() :: print working directory
+        - load('safter.js') :: load the script safter.js into the current shell
+        - Anything placed in ~/.mongodb-rc will be executed on start of shell.
+        - mongo --norc :: starts shell without reading ~/.mongodb-rc
+        - db.serverStatus() :: Lots of server status info
+        - db.serverCmdLineOpts() :: Outputs the command line options that the shell was started with.
+** Storage Engine
+   - Uses memory mapped files
+   - mongo creates a huge array that it treats as if it were all just in memory. The array references files and core OS library handles serializing the data to disk and reading it into memory.
+     - OS lib is highly optimized and reliable
+   - data in mongo is stored in a binary JSON format called BSON
+     - reference :: http://bsonspec.org
+     - BSON requires very little marshalling to convert from memory to disk and vice versa.
+   - Lots of optimization with little overhead results in a very fast storage engine
+** Saving Documents
+   - What is required to store data in mongo?
+     1. An document must have an id field named _id
+        - If the document is missing the _id field then one will be provided.
+     2. Document must be no larger than 16 MB.
+   - Collections
+     - > show collections :: shows any collections in the database.
+     - Defines scope of interaction with documents.
+       - Cannot issue command accross multiple collections
+   - Save a document
+     - db.<colleciton-name>.save(<json object>);
+     - db.foo.save({_id:1, x:10});
+     - The first time you save to a collection if it does not exist it will be created.
+     - Once created show collections will find the new collection.
+       - db.system.indexes :: a special collection indexing the ids from all other collections in the database.
+     - If an object is saved without an _id field then mongo will generate one:
+       > db.users.save({name:'Bob'})
+         WriteResult({ "nInserted" : 1 })
+       > db.users.find()
+         { "_id" : ObjectId("56d7c92eb6b9acc077b385a4"), "name" : "Bob" }
+     - ObjectId() :: generates a new object id.
+       - ObjectId().getTimestamp() :: No need to store a timestamp field as the object id contains a timestamp.
+       - ObjectIds create an ascending insertion order, that is they sort in order that they were created.
+     - What happens when two different documents are saved with the same id?
+       - The first save creates the new object with the given _id.
+       - Since the second save has the same _id it simply updates the document.
+     - What happens if we try to insert two documents with the same _id into the same collection
+       > db.foo.insert({_id:1, name:'bob'});
+       > db.foo.insert({_id:1, age:12});
+       - results in a write error.
+       - So insert can be used to help with data integrity since it will prevent clobering an existing record if one already exists.
+     - Calling insert multiple times without providing an _id field behaves in the same way as save does. The shell will generate new _id fields each time.
+   - read a document
+     - db.<collection-name>.find()
+     - db.foo.find()
+       - > db.system.indexes.find()
+          { "v" : 1, "key" : { "_id" : 1 }, "name" : "_id_", "ns" : "test.foo" } // here the database is test and the collection is foo, hence test.foo
+     - db.foo.find().pretty()
+       - beautifies the output
+     - valid types for _id field:
+       - integer
+       - real number
+       - string
+       - UTC date
+       - complex structure
+     - invalid types for _id field:
+       - An array.
+     - db.foo.findOne({_id:1}) :: finds the record with _id = 1 in the collection foo
+   - Update a document
+     - The update command is atomic within a document. That is, no two clients may update the same document at the same time.
+     - Two update commands issued concurrently will be executed one after the other.
+     - Syntax: db.<collection-name>.update(<query>, <update>, <options>);
+       - <query> :: determines which document
+       - <update> :: What change
+       - <options> :: Optional parameter. Values: One, Many, Upsert
+         - One :: The first one found. Default option.
+         - Many :: Any documents matching query
+         - Upsert :: If not found will create a new document, otherwise will update the existing document.
+     - > db.foo.update({_id:1}, {$inc: {x:1}}); :: uses mongo's increment operator to atomicallyl update the document
+     - How to update a document to have an additional field:
+       - db.<collection-name>.update({_id:1}, {$set: {y:3}}) :: uses $set operator
+     - How to update a document to have a field removed:
+       - db.<collection-name>.update({_id:1}, {$unset: {y:''}});
+     - $rename :: rename operator
+       - db.<collection-name>.update({_id:1}, {$rename: {<old-name>: <new-name>}})
+     - $push :: pushes values into an array. If one does not exist then one is created
+       - db.<collection-name>.update({_id:1}, {$push: {things: 'one'}});
+     - $addtoSet :: like push, but treats the target as a set so that adding more than one item of the same value will not cause it to be added more than onece to the document.
+     - $pull :: removes all instances of an element from an array
+     - $pop :: removes the first or last element in array. 1 for last -1 for first.
+          > db.<collection-name>.update($pop: {<field>:<-1 | 1>}});
+     - multi:true :: Allows an update to affect more than one record
+       - db.<collection-name>.update({}, {$push: {things:4}}, {multi:true}); :: An empty query {} means no filtering.
+     - findAndModify :: updates a specific record. Only the first one found is modified. Returns the record before the change was made.
+       - Syntax:
+         - db.<collection-name>.findAndModify( {
+           query: <document>, //query parameter determines what records are returned.
+           update: <document>, //what change?
+           upsert: <boolean>, //create or update document matching criteria. Not to be used with remove
+           remove: <boolean>, //remove document matching criteria. Not to be used with upsert.
+           new: <boolean>, // If true then findAndModify returns the record after the change is made.
+           sort: <document>, //query order
+           fields: <document>}) //What fields to include in the returned document.
+
+** Retrieving Documents
+   - Query criteria
+     - db.<collection-name>.find(
+       <query>,                    // filter
+       <projection>)               // Which fields should be returned. This is optional.
+     - Projection contains the names of the fields to include or exclude from the returned document.
+       - {<field>: 1} //include field
+       - {<field>: 0} //exclude field
+       - _id is included by default.
+       - You cannot mix including and excluding fields. This may change in the future.
+     - Reference
+       - https://docs.mongodb.org/manual/reference/operator/query/ :: complete list of query and projection operators
+     - Query criteria is case sensative
+     - Dot notation
+       - used to provide query parameters deep within the document structure
+         - db.animals.find({'info.canFly': true})
+     - Things to watch out for
+       - Field existance and nulls
+         - Don't use null to test for existance. i.e. db.animals.find({'info.canFly': null}) will return things with canFly and without.
+           - db.aminals.find('info.canFly': {$exists: true}}) will return documents only where canFly is defined.
+       - comma seperated criteria are all AND'ed
+   - Field Selection
+   - Cursor
+     - Returned from a find command when multiple documents are returned.
+       - var cursor = db.<collection-name>.find({}, <query>)
+       - cursor operations
+         - size() :: returns cursor size
+         - hasNext() :: returns true if there are items to iterate over
+         - forEach(function(<document>){}) :: iterates cursor items
+         - sort({<field>:<sort-direction>) :: sorts the cursor results.
+           - sort-direction > 0 ascending, sort-direction < 0 descending
+           - sorting is done on server side. The field being sorted by does not need to be included in a projection.
+           - May sort by multiple fields at different levels in the document hierarchy
+             db.animal.find({}, {name:1, 'info.type':1}).sort({'info.type':1, 'name': -1})
+         - limit(<max-num>) :: takes up to max num of documents.
+         - skip(<num-skip>) :: number of docs to skip. This combined with limit is useful for paging.
+         - findOne() :: returns exactly one document (not a cursor, but a document)
+** Mongodb Indexing
+   - Indexes
+     - Without indexes all documents in a collection would have to be loaded into memory and scanned for specific query criteria
+     - An index is a table of field to document mappings allowing mongo to quickly find all documents where a field matches certain criteria.
+     - Indexes allow only documents matching the criteria to be loaded into memory.
+     - Types of Indexes
+       - Regular B-Tree
+         - Single or multiple field
+         - single or multiple values
+       - Geo
+         - Omptimized for geo location
+         - Does not have to be geography. The algorithm calculates proximity of points to centre.
+         - Allows to find things near something
+           - sort by nearness or proximity to a certain point.a
+       - Text
+         - Allows for full text searching
+       - Hashed
+         - Pertains mainly to sharding
+         - Allows index on a certain field, but reduces fragmentation of the indexes. This allows documents to be spread more evenly across shards.
+       - TTL
+         - Time To Live index
+         - Support expiring documents.
+         - Can specify a date time on a document to be an expiry datetime.
+         - Mongo will automatically remove the document from the collection when it expires.
+     - Supports indexing arbitrary nested feilds
+     - multi-key index :: When indexing an array each element of the array will be indexed as a value
+   - Indexing a Collection
+     - Commands
+       - ensureIndex :: creates an index
+         ({
+         <key>:<sort-direction>},           //which fields, what order and if it is Geo or Text
+         {<options>})
+         - options:
+           Name :: Name of index
+           Build Now :: Build immediately and block every other operation or build it in the background
+           Unique :: Is the index unique? Whether to make this uniqueness a constraint.
+           Spars :: Is it a sparse index?
+           TTL :: Is it a TTL index
+           Language :: What language settings should be used
+         - ensureIndex may contain a comma seperated list of keys of the form <field1>:1,<field2>:1
+       - db.system.indexes.find({ns:<namespace>}, {key:<key>})
+         - use to find an index.
+         - namespace is <database>.<collection>
+       - How to find out of mongo uses an index for a query?
+         - db.<collection>.find(<query>).explain()
+         - explain outputs a description of how mongo is going about resolving the query.
+         - if cursor is BasicCursor then no indexing is used.
+         - scanned property tells how many documents are scanned to resolve the query.
+         - explain tells many useful things about what mongodb is doing to resolve query.
+       - To alter an index you must drop it first.
+         - db.<collection>.dropIndex(<indexName>)
+         - Not allowed to drop index on _id
+       - Unique Index
+         - db.<collection-name>.ensureIndex({<field-name>:1}, {unique:true});
+         - db.system.indexes.find({ns:'<database>.<collection-name>'}).pretty() will output with the index <field-name> will have the 'unique':true property
+         - Although the _id index is unique mongo does not print it out with the unique property.
+       - Sparse Index
+         - db.<collection-name>.ensureIndex({<field-name>:1}, {sparse:true});
+         - By default when you create an index a key value is created for every document in the collection even for documents that do not contain the feild being indexed.
+         - A sparse index will create an index only for those documents in the collection that contain the field being indexed.
+         - If a query is performed that uses a sparse index it will omit all documents that do not have that index and that may not be what you want. It is important to make sure that your indexing strategies and your queries match up all of the documents that you want.
+       - Multi Index (Compoind Index)
+         - db.<collection-name>.ensureIndex({field-name1>:1,<field-name2>:1})
+         - db.<collection-name>.find({<field-name1>:'val1',<field-name2>:'val2).explain() :: shows that index is used
+         - db.<collection-name>.find({<field-name2>:'val2',<field-name1>:'val1).explain() :: shows that index is used
+         - db.<collection-name>.find({<field-name1>:'val1').explain() :: shows that index is used
+         - db.<collection-name>.find({<field-name2>:'val2').explain() :: shows that index is NOT used. Why? Because the index was created specifying <field-name1> then <field-name2> and any query must include, in any order, the field names as they were declared from left to right.
+         - May contain up to 31 fields in it. The name of the field is the concatonation of the field names and their sorting direction.
+         - Mongo imposes a 128 character limit on index names so it is possible that this limit could be exceeded by compound indexing.
+         - The 128 character limit includes the name of the colleciton.
+         - Is a problem when you have lots of field names included in a compound index. It can also be a problem when you have lots of deeply nested indexes.
+         - See Index Name for a resolution to this issue
+       - Sort direction
+         - Query sort direction is same as index sort direction :: The index will be used
+         - Query sort direction opposite of index sort direction :: The index will be used
+         - Query sort direction neither same nor opposite as index sort direction :: The index will not be used
+           - db.<collection-name>.ensureIndex({<field-name1>:1,<field-name2>:1})
+             db.<collection-name>.find().sort({field-name1>:1,<field-name2>:-1}) :: since the query is sorted with field1 ascending and field2 descending it is neither the same nor the opposite as what the index supports so the index cannot be used.
+       - Covering Index
+         - If a query uses an index and if all the information the query requests is covered by the index, then there is no need to fetch the actual document as the index itself can be used to return the requested information.
+         - To make mongodb use a covering index you will have to make sure that you omit the _id unless it is actually part of the index. Otherwise it will have to fetch the actual document in order to get the _id field.
+         - explain() will return the property 'indexOnly':true if a covering index strategy is used when returning values for a given query.
+       - Dead Weight Index
+         - Mongodb will let you create an index on a field when no document in the collection exists with that field.
+         - It will keep track of this index and one day if a document is created with that field then it will be covered by that index.
+         - For this reason it is possible to misspell an index name and mongodb will happily create it. You may not realize that you created the wrong index. Always use explain to double check that your indexes are being used in queries as you expect them to be.
+       - Background index building
+         - db.<collection-name>.ensureIndex({<field-name>:<sort-direction>},{background:true})
+         - By default ensureIndex will index the collection in the forground blocking all other queries. In a large database this can take a long time.
+         - By setting background option to true mongodb will index a collection in the background allowing read and write operations to continue
+         - Indexing in the background can take much longer.
+         - Indexing in the background can result in larger indexing structures then indexing in the foreground.
+       - Index Name
+         - db.<collection-name>.ensureIndex({<field-name>:<sort-direction>},{name:<index-name>});
+         - By default the index name is the concatonation of all the field names and sort directions specified during indexing.
+         - <index-name> provides a name for the index overriding the default index naming scheme.
+              
 ** TODO Install Mongo-db Minimal ReplicaSet
    - mongod -f "e:\dev\experiments\MultiVision\conf\mongod1.conf" --replSet "Experiments" --install
    - Windows instructions to get the replica set running as a service.
+* REST
+  - Representational State Transfer
+  - ReST services should be written around nouns not verbs
+  - Design the service around a Uniform Interface. There are 3 peices that should always operate the same way from one service to the next
+    1. Resources
+       - These are the nouns or things that the uniform interface is built around
+       - Services should not use verbs or actions.
+    2. HTTP Verb
+       - defines the type of activity you are trying to perform on the resource
+       - GET :: retrieves a resource
+       - POST :: creates a resource
+       - DELETE :: Removes a resource
+       - PUT :: updates an entire resource
+       - PATCH :: updates a piece of a resource
+    3. HATEOS (Sounds like - Hayoss)
+       - Hypermedia As The Engine Of Application State
+       - Means that in each request will be a set of hyperlinks that you can use the navigate the API
+       - Creates a self documenting API.
+       - This is a manual procedure where you clone the model being returned and add links for all of the valid end points for the model
+
+* Mocha
+  - Unit testing framework
+* Should
+  - Assertion framework
+  - BDD Style
+* expect
+  - BDD Style assertion framework
+* sinon
+  - mocking framework
 * jquery
+* MEAN stack
+** Steps to create a walking skeleton
+ - Create working directory
+   - cd <working_dir>
+   - npm help json :: review fields used by npm init
+   - npm init
+   - npm install express jade --save :: jade is view rendering engine
+ - Setup git
+   - git init :: or optionally git clone
+   - touch .gitignore
+   - git status :: take not of what git sees
+   - Add anything that you do not want to be under source control to the .gitignore file
+   - git add -A :: Add everything not ignored to be tracked by git.
+   - git commit -a -m "first commit"
+ - Install Clientside Dependencies using bower
+   - npm install bower --save-dev
+   - sudo npm install bower -g :: For convenience so that it is easily within scope from terminal
+   - mkdir server :: server side application
+     - Will contain:
+       - node source code
+       - jade views
+       - client-side partials
+   - mkdir public :: client side application
+     - All of our angular application code.
+   - touch .bowerrc :: tells bower where to install client-side dependencies
+   - For bower package.json spec please reference
+     - https://github.com/bower/spec/blob/master/json.md
+   - bower init
+   - bower install jquery --save
+   - bower install toastr --save :: client side notifications
+   - bower install angular angular-resource angular-route --save
+ - Create Node Application
+   - touch server.js :: main file for node application
+   - npm install gulp gulp-nodemon --save-dev
+   - sudo npm install gulp -g :: for convenience
+   - touch gulpFile.js
+     - create default task
+       - construct nodemon
+       - handle restart event just to print out that it has happend.
+   - Inside server.js:
+     - require express
+     - get the port
+     - construct express
+       - set views path
+       - set view engine
+     - configure default server side route
+       - have this catch all route render the index view
+     - Create ./server/views/index.jade
+     - Configure app to listen on port
+     - configure middleware
+       - npm install morgan body-parser stylus --save
+       - configure logger (morgan) for express
+       - configure body-parser middleware to handle marshalling json
+       - configure css preprocessor middleware
+       - use express static middleware to configure routing to /public. This tells angular that any requests that match the static route it should just u pand serve the content.
+   - Create Layout jade file
+     - mkdir server/includes
+     - touch server/includes/layout.jade
+     - move all content from server/views/index.jade to server/includes/layoute.jade
+     - mkdir public/css
+     - touch public/css/site.styl :: application stylus file
+     - bower install bootstrap --save :: our css will leverage bootstrap
+     - Add links in layout.jade to favicon, bootstrap, toastr and our own site.css
+     - touch server/includes/scripts.jade :: here will inject all of our script tags
+     - include scripts in layout.jade
+     - In server.js add a second param to the default route which renders the index view.
+       - The second param should include the following properties:
+         - title :: The title of the application
+         - scripts :: An array of paths to all of the scripts that we wish to inject into scripts.jade.
+           - jquery, angular, angular-resource, angular-route
+     - Inside scripts.jade
+       #+BEGIN_SRC jade
+       - each script in scripts
+         script(type="text/javascript", src=script)
+       #+END_SRC
+     - Inside the layout
+       - Inside head add
+         - title= title
+         - base(href="/")
+         - any links
+       - include scripts either in head or end of body
+     - inside server/views/index.jade
+       - extend ../includes/layout.jade
+       - add block for main-content
+  
+ - Create Angular Application
+   - mkdir public/app
+   - touch public/app/app.js :: main angular application entry-point
+   - Define the angular application module
+   - configure the angular application module
+     - Turn on html5mode
+       - add base(href="/") to to the head of /server/includes/layout.jade so that routing will work properly
+       - Inside public/app/app.js place $location.Provider.html5mode({enabled: true}); above the routeProvider rules.
+     - Add a default rout to /partials/main with a controller called mainCtrl
+     - Define the mainCtrl right in the app.js for now to verify that it works.
+     - Include public/app/app.js in server/includes/scripts.jade
+     - Make a partials file that our mainCtrl will request.
+       - mkdir /views/partials
+       - touch /views/partials/main.jade
+       - Add some content that binds to a scope variable from mainCtrl so that we can prove that it works.
+       - Remove section.content message from index.jade and replace it with an ng-view
+       - Inside the /server/includes/layout.jade add ng-app directive to body tag
+       - Add route to partials before the catch-all route.
+         - the route should have form 'partials/:partialPath'
+ - Hook the walking skeleton up to mongodb
+   - npm install mongoose --save
+   - Inside the server.js file require mongoose
+   - Under the static express route connect to mongodob
+   - on any database errors log that there was a connection error
+   - on the connection open event log that we have established a connection.
+   - Start the server and test that the connection is successfully established.
+   - Create a mongoose schema called messageSchema
+   - Create a Message model based on messageSchema
+   - Fetch one item from the database using the Message model
+   - Add message property to object being rendered to index view.
+   - go to server/view/index.jade and display the message.
+   - switch to mongo shell
+   - db use MultiVision
+   - db.messages.insert({message:'Hello Angular from mongodb'})
+   - Now reload the index page and the message 'Hello Angular from mongodb' should be rendered.
+ - Add tests
+   - Unit tests
+   - Integration Tests
+     - Use Node Environment variables to set connection string
+     - Inside
+ - Angular User Interface
+   - Create header in index.jade
+     - Normally the header would go in the layout, but since this is a SPA we will stick it in the index.
+     - update site.styl
+   - Create footer in index.jade
+     - update site.styl
+ - Prepare Application for deployment
+   - Add engines property to package.json
+** Authentication
+ - Passport Local Strategy
+   - Server-side
+     - npm install passport passport-local --save
+     - Create a User model using mongoose
+     - in server.js 
+       - passport = require('passport')
+       - passportLocal = require('passport-local').Strategy;
+       - configure passport middleware after the call to require mongoose configuration using passportLocal
+       - handle passport serializeUser
+       - handle passport deserializeUSer
+     - In server/config/routes.js
+       - Below route to partials add a post route to '/login' and handle passport.authenticate for local strategy.
+     - npm install cookie-parser express-session --save
+     - In server/config/express.js
+       - require cookie-parser, express-session and passport
+       - add cookieParser middleware below logger middleware
+       - add session middleware below bodyParser middleware
+       - add passport initialize middleware
+       - add passport session middleware       
+     - Create an authentication service
+       - mkdir server/config/auth.js
+       - create module.exports.authenticate function
+       - refactor logic from server/config/routes.js app.post /login and move the authentication logic to server/config/auth.js authenticate function
+       - remove require('passport') from server/conf/routes.js
+       - add require('auth') to server/conf/routes.js
+       - have post take auth.authenticate as second argument.
+       - test that everything still works.         
+   - Client-Side
+     - inside mvNavBarLoginCtrl
+       - inject $http service
+       - in $scope.signin post to the login endpoint passing the user's credentials.
+       - if response.data.success then console.log that the user logged in.
+       - else console log that there was an authenticaiton failure
+     - Create toastr notification
+       - mkdir public/app/common
+       - touch public/app/common/mvNotifier.js
+       - at the top of the file define a value for toastr so that it can be injected.
+       - use app.factory to create mvNotifier and inject mvToastr.
+       - Return an object with a notify function that takes a message argument and pasess it to mvToastr.success
+       - Use the mvNotifier service in the mvNavBarLoginCtrl for both success and failure notifications.
+       - add path to mvNotifier in server/config/routes.js catch all scripts property
+       - test and style toastr message.
+     - Create identity service
+       - mkdir public/app/account/mvIdentify.js
+       - use app.factory to create mvIdentity service
+       - add path to mvIdentity.js in server/config/routes.js catch all scripts property
+     - Create an authentication service
+       - touch public/app/account/mvAuth.js
+       - use app.factory to create mvAuth service for handling the client-side authentication logic.
+       - The service should take $http, mvIdentity, $q
+       - Refactor authentication service from mvNavBarLoginCtrl.signin to mvAuth.authenticateUser(username, password)
+       - inside the mvNavBarLoginCtrl.signin call mvAuth.authenticateUser and issue the success / fail notifications.
+       - add path to mvAuth.js in server/config/routes.js catch all scripts property
+ - Implementing secure passwords
+   - clear-text password + salt => Hashing Algorithm => Hashed Password
+   - We will use a unique salt for each user therefore we will store both a user's hashed password and there salt.
+   - in server/conf/mongoose.js
+     - Alter userSchema by adding two properties:
+       - salt: String
+       - passwordHash: String
+     - require('crpto')
+     - Create method to generate a salt
+       - Create the method salt
+         - return crypto.randomBytes(128).toString('base64');
+     - Create method to take a salt and password and return a hashed password
+       #+BEGIN_SRC javascript
+       var hashPassword = function(salt, password){
+         var hmac = crypto.createHmac('sha1', salt);
+         hmac.setEncoding('hex');
+         hmac.write(pwd);
+         hmac.end();
+         return hmac.read();
+       }
+       #+END_SRC     
+     - Create userSchema.methods json and add a funciton called authenticate to the userSchema that takes a password
+       #+BEGIN_SRC javascript
+       userSchema.methods= {
+         authenticate: function(password){
+            return hashPassword(this.salt, password)) === this.passwordHash;
+         }
+       }
+       #+END_SRC
+   - in server.js
+     - In the passport middle-wear after the user is checked for existance also call user.authenticate(password)
+ - Create a means of logging out
+   - Add a button to logout on the navbar-login
+   - inside public/app/account/mvNavBarLoginCtrl
+     - Add method signout that calls mvAuth.logoutUser and then redirects the user to the home page.
+   - inside public/app/account/mvAuth
+     - add the loutout function.
+     - It should post a dummy payload to a logout endpoint. On success it should set the currentUser to undefined.
+   - inside the server/config/routes.js
+     - Implement the logout endpoint.
+     - call req.logout() // function added by passport
+     - call res.end()
+   - Test the logout functionality
+ - Add current user to client session
+   - Inside server/includes/layout.jade
+     - include currentUser
+   - Create server/includes/currentUser.jade
+     - assign bootstrappedUser property to window.bootstrappedUserObject so that it is available on the client
+   - Inside server/config/routes.js
+     - Add bootstrappedUser property to the catchall route render index argument and assign it to req.user.
+   - Inside public/app/account/mvIdentity
+     - Check the $window.bootstrappedUserObject and if it exists then assign that to the currentUser variable
+ - Refactor Server Authentication
+   - Create server/config/passport.js
+     - move passport configuration code from server.js to module.exports. This should include creating the mongoose User model.
+     - server.js should now have no 3rd party require statements.
+     - Test that everything still works.
+ - Implementing Client-side authorization
+   - Inside server/config/mongoose.js add roles property to userSchema that is an array of type String
+   - In the section where the default users are added, make one user have the 'Admin' Role, one user have an ampty roled array and one user not have roles defined at all.
+   - clear the users collection in mongo shell
+   - restart server.
+   - Even though we did not set the roles property to one of the users you can see that mongoose created the property and set it to an empty array in the mongodb users collection
+   - Create a user resource object
+     - using app.factory create the service public/app/accounts/mvUser.js
+     - inject $resource
+     - create a UserResource variable set to $resource('/api/users/:id', {_id: '@id'})
+     - using prototype create function UserResource.isAdmin to see if the user is an admin by checking the roles collection on the resource.
+   - Inside mvAuth
+     - create a user variable that is a new mvUser and use angular.extend on user and resource.data.user.
+     - set the mvIdentity.currentUser to the user resource.
+     - Now mvIdentity.currentUser will have isAdmin function
+   - Inside mvIdentity
+     - if $window.bootstrappedUserObject is a thing then set currentUser to new mvUser and extend with $window.bootstrappedUserObject
+     - Now the client user has the isAdmin function
+   - Add an /admin/user link to nav-bar login dropdown menu
+     - Only render the link if identity.currentUser.isAdmin() is true
+ - Implement Server-side Authorization
+   - Inside server/config/routes.js
+     - require ('mongoose')
+     - use mongoose to create the User model
+     - Create the route /api/users that will return a list of all our users
+     - Test that the endpoint returns all of the users in the browser and notice that it can be accessed without being logged in.
+     - protect the resource so that the user will recieve a 402 if they make a request for the users resource without being logged in.
+       - add another function to the /api/users route indbetween the route and the function that returns the users collection.
+       - Make this middleware function take the following parameters: req,res,next
+       - use req.isAuthenticated() provided by passport to see if the user is authenticated and call next() in that case
+       - otherwise, set the status, send a message and call res.end()
+     - Refactor the authentication check function from the previous step to the server/config/auth.js module.exports.isApiAuthenticated
+       - Now use auth.isAuthenticated as the first parameter to /api/users and anywherelese that we wish to protect.
+   - Inside server/config/auth.js create module.exports.requiresRole(role) 
+     - Have this function return a middleware function(req,res,next)
+     - if not authenticated or does not have role then return 403, otherwise proceed to next function
+ - Create and protect admin page on client
+   - Inside public/app/app.js create new route for admin page
+     - .when('/admin/users', {templateUrl: '/partials/admin/userList', controller: 'mvUserListCtrl'});
+   - mkdir public/admin
+   - Create mvUserListCtrl.js
+     - touch public/admin/mvUserListCtrl.js
+     - The controller should use mvUser.query() to set a $scope.users variable.
+   - Create userList partial
+     - touch public/admin/userList.jade
+     - Create a table that loops over the collection of users and outputs their first and last names
+   - Inside of server/config/routs.js Add mvUserListCtrl to the index page scripts.
+   - Inside of public/app/app.js add an route resolver to the /admin/users route following the controller
+     #+BEGIN_SRC javascript
+     resolve: {
+            auth: function(mvIdentity, $q){
+                if(mvIdentity.currentUser && mvIdentity.currentUser.isAdmin()){
+                    return true;
+                }
+                else{
+                    return $q.reject('not authorized');
+                }
+            }
+        }
+     #+END_SRC
+     - Following app.config add an app.run that handles the $rootScope.$on('$routeChangeError', ...) event and watches for a rejection message matching the one we defined in our route resolve defined above. If it does, then redirect the client back to the home page using $location.path('/');
+ - Refactor client-side routing
+   - Inside app/account/mvUser
+     - Add function UserResource.prototype.hasRole(role) That checks role against this.roles
+     - refactor UserResource.prototype.isAdmin to call hasRole
+   - Add isAuthorized function to identity service
+     - Should take in a role
+     - Should return true if the user is authenticated and this.currentUser.hasRole(role) returns true
+   - Move authorization code from route resolver to mvAuth
+     - inside public/app/account/mvAuth
+       - create function isCurrentUserAuthorized(role)
+       - paste in code from route resolver and alter it so that it passes along the provided route rather than hard checking for 'Admin'
+       - now set the routes resolve.auth to be assigned to a function that injects mvAuth and returns mvAuth.IsCurrentUserAuthorized('Admin')
+   - Refactor route resolver to a convenience object called routeRoleChecks
+     #+BEGIN_SRC javascript
+     var routeRoleChecks = {
+        admin: {auth: function(mvAuth){
+            return mvAuth.isCurrentUserAuthorized('Admin')
+        }}
+     };     
+     #+END_SRC
+     - now set routes resolve property to routeRoleChecks.admin
+** Unit Testing
+   - sudo npm install karma-cli -g
+   - npm install karma mocha karma-mocha karma-chai-plugins --save-dev
+   - bower install angular-mocks --save-dev
+   - karma init
+     - testing framework: mocha
+     - use require.js: no
+     - browser to capture automatically: firefox
+     - location of source and test files:
+       - public/app/**/*.js
+       - test/tests/**/*.js
+     - location of source to exclude:
+       - public/app/app.js
+     - Should karma watch files?
+       - yes
+   - Configure karma
+     - inside karma.conf.js
+       - frameworks: ['mocha', 'chai', 'sinon-chai'
+       - Add to files:
+        'public/vendor/angular/angular.js',
+        'public/vendor/angular-resource/angular-resource.js',
+        'public/vendor/angular-mocks/angular-mocks.js',
+     - mkdir test
+     - mkdir test/public
+     - mkdir test/public/app
+     - touch test/public/app/app.js
+     - inside test/public/app/app.js
+       - var app = angular.module('app', ['ngResource']); //not testing routing so no ng-route
+       - create fake global toastr object
+         var toastr = {}
+     - Inside karma.conf.js
+       - insert 'test/public/app/app.js' into files array after all 3rd party stuff, but before any of our own stuff
+     - Test that karma runs
+       - karma start
+   - Write some tests
+     - mvUser Service
+       - mkdir test/public/app/account
+       - touch test/public/app/account/mvUser.test.js
 * git
 ** Steps to create a new Github Rep
  1. Login to github and create the repository
@@ -187,6 +1098,7 @@
 - =# make help= :: output help
 - =# make modules_install MODLIB=/lib64/{kernel-version}{cust-postfix}= :: Installs kernel modules to custom path
 ** Commands :: remember to always check the man pages.
+  - pwd :: print working directory
   - lsblk :: list block devices.
   - lddtree --help :: there are no man pages for this command
   - lddtree --copy-to-tree=/source/path /target/path :: from app-misc/pax-utils USE="python"
@@ -1836,7 +2748,8 @@ qemu-system-x86_64 -enable-kvm -global ide-drive.physical_block_size=4096 -drive
     - [ ] If I need it then configure it.
     - [ ] If I don't, then remove it.
   - [ ] Address WARNING: 'portageq envvar PORTDIR' is deprecated. Use any of 'get_repos, get_repo_path, repos_config' instead.
-
+  - [ ] Learn about prodigy-mode for services
+  - [ ] Learn about company-statistics for company-mode
 * JOTTED
 - Kernel to look into:
   - [CONFIG_USELIB] :: do I need this for hardened?
